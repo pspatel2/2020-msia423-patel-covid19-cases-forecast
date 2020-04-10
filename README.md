@@ -1,7 +1,18 @@
-# MSiA423 Template Repository
+# COVID-19 Confirmed Cases Forecasting 
+
+***
+__Developor__: [Parth Patel](https://github.com/pspatel2)  <br/> 
+__QA__: [Greesham Simon](https://github.com/greeshamsimon)  
+***
 
 <!-- toc -->
-
+- [Project Charter](#project-charter)
+    * [Vision](#vision)
+    * [Mission](#mission)
+    * [Success Criteria](#success-criteria) 
+- [Planned Work](#planned-work)
+    *[Backlog](#backlog)
+    *[Icebox](#icebox)
 - [Directory structure](#directory-structure)
 - [Running the app](#running-the-app)
   * [1. Initialize the database](#1-initialize-the-database)
@@ -18,6 +29,23 @@
   * [Workaround for potential Docker problem for Windows.](#workaround-for-potential-docker-problem-for-windows)
 
 <!-- tocstop -->
+
+## Project Charter
+
+###Mission:
+Coronavirus is a family of viruses that can cause illness, which can vary from common cold to more severe illnesses such as the current pandemic known as COVID-19. As the COVID-19 pandemic accelerates at a frightening pace, most of world’s governments have issued orders for their citizens to stay at home to minimize the spread of the virus. There is a lot of uncertainty around the virus and its spread which adds to the fear and panic around the situation. The primary focus of this app is to provide forecasting of COVID-19 cases in attempts to reduce some level of uncertainty.
+
+###Vision:
+Utilize historical time series data of COVID-19 cases to forecast the number of expected COVID-19 cases for each day through the next week. This forecast will be computed at both the global level and the country level. Data is updated daily and is pulled via a free [API](https://covid19api.com/#details). This data is originally sourced by Johns Hopkins CSSE.
+
+###Success Criteria
+__Machine Learning Performance Metric__:
+
+Forecasting model achieves MAPE of 30% or less.
+
+__Business Metrics__:
+
+Inbound traffic of 100 unique users and 50% retention thereafter.
 
 ## Directory structure 
 
