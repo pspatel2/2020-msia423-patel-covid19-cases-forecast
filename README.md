@@ -11,8 +11,8 @@ __QA__: [Greesham Simon](https://github.com/greeshamsimon)
     * [Mission](#mission)
     * [Success Criteria](#success-criteria) 
 - [Planned Work](#planned-work)
-    *[Backlog](#backlog)
-    *[Icebox](#icebox)
+    * [Backlog](#backlog)
+    * [Icebox](#icebox)
 - [Directory structure](#directory-structure)
 - [Running the app](#running-the-app)
   * [1. Initialize the database](#1-initialize-the-database)
@@ -46,6 +46,102 @@ Forecasting model achieves MAPE of 30% or less.
 __Business Metrics__:
 
 Inbound traffic of 100 unique users and 50% retention thereafter.
+
+## Planned Work
+### Initiative 1: Forecasting model to predict number of COVID-19 cases in the future
+**_Epic 1: Data acquisition_**
+- Story 1: Write Python script to pull data using the API 
+- Story 2: Explore other sources of data that could be joined with the API data for additional features
+
+**_Epic 2: Data preparation_**
+- Story 1: Exploratory data analysis and data quality checks
+- Story 2: Design new features 
+- Story 3: Create final cleaned dataset to be used for modeling
+
+**_Epic 3: Model development_**
+- Story 1: Build and evaluate a linear regression model for forecasting as a baseline approach
+- Story 2: Build a Holt Winters Exponential Smoothing model
+- Story 3: Research on ARIMA modeling and build an ARIMA model
+- Story 4: Research RNN modeling
+- Story 5: Build RNN Model
+- Story 6: Repeat modeling process at the USA state level
+
+**_Epic 4: Ensemble models_**
+- Story 1: Ensemble predictions from models built in Epic 3
+- Story 2: Research other efforts to perform similar predictions online
+- Story 3: If similar open source models are found online by other users, ensemble them into the prediction
+
+### Initiative 2: Web Application Development and User Experience Design
+**_Epic 1: Configure deployment pipeline_**
+- Story 1: Create requirements.txt file so that the appropriate packages and their respective versions can be installed/loaded in any environment/container
+- Story 2: Set-up a S3 bucket/instance and store raw data here
+- Story 3: Create script to pull daily data from the API and append to data in S3
+= Story 4: Initialize RDS database with model results
+
+**_Epic 2: Front end interface for model results_**
+- Story 1: Global trend plot with forecasted values shown
+- Story 2: Country level trend plot with forecasted values shown and user UI to selection country of interest
+- Story 3: USA state-wise trend plot with forecasted values
+- Story 4: Write the script to deploy the Flask app 
+
+**_Epic 3: Descriptive analyses_**
+- Story 1: Global geospatial map to show current state of COVID-19
+- Story 2: Racing bar chart or alternative viz to show the spread of the virus
+
+**_Epic 4: Product tests and refinement_**
+- Story 1: Create tests to confirm model functionality
+- Story 2: Create test(s) for UI exception handling
+- Story 3: Adjust product based on test results and roll out closed prototype of the app
+- Story 4: Send link to prototype to beta users for feedback
+- Story 5: Improve UI based on beta user feedback
+
+**_Epic 5: Release and Demo_**
+- Story 1: Verify git repo is up to date, clean, and confirm all deliverables are met per requirements
+- Story 2: Create presentation deck for final demo
+- Story 3: Collect feedback on final presentation deck/demo
+- Story 4: Incorporate feedback by making final adjustments to app and presentation
+
+### Backlog
+
+__Sprint Sizing Legend:__
+- 0 points - quick chore
+- 1 point ~ 1 hour (small)
+- 2 points ~ 1/2 day (medium)
+- 4 points ~ 1 day (large)
+- 8 points - big and needs to be broken down more when it comes to execution (placeholder for future work)
+
+1.  Initiative1.Epic1.Story1: Pull Data from API (1pts) -- Sprint 1 (April 11 - April 25)
+2.  Initiative1.Epic1.Story2: Research for Additional Data (2pts) -- Sprint 1 (April 11 - April 25)
+3.	Initiative1.Epic2.Story1: EDA & QA (4pts) -- Sprint 1 (April 11 - April 25)
+4.	Initiative1.Epic2.Story2: Design New Features (2pts) -- Sprint 1 (April 11 - April 25)
+5.	Initiative1.Epic2.Story3: Create finalized dataset (1pts) -- Sprint 1 (April 11 - April 25)
+6.	Initiative1.Epic3.Story1: Linear Regression & Eval (4pts) -- Sprint 1 (April 11 - April 25)
+7.	Initiative1.Epic3.Story2: Holt Winters Model (2pts) -- Sprint 2 (April 11 - April 25)
+8.	Initiative1.Epic3.Story3: ARIMA Modeling (4pts) -- Sprint 2 (April 11 - April 25)
+9.	Initiative1.Epic3.Story4: Research LSTM (2pts) -- Sprint 2 (April 25 - May 9)
+10.	Initiative1.Epic3.Story5: Build LSTM (4pts) -- Sprint 2 (April 25 - May 9)
+11.	Initiative2.Epic1.Story1: requirements.txt file (1pts) – Sprint 3 (May 9 – May 23)
+12.	Initiative2.Epic1.Story2: Set up S3 instance (2pts) – Sprint 3 (May 9 – May 23)
+13.	Initiative2.Epic1.Story3: Daily data append to S3 (4pts) – Sprint 3 (May 9 – May 23)
+14.	Initiative2.Epic1.Story4: Initialize RDS database (4pts) – Sprint 3 (May 9 – May 23)
+15.	Initiative2.Epic2.Story1: Global trend plot w/forecast (2pts) – Sprint 3 (May 9 – May 23)
+16.	Initiative2.Epic2.Story2: Country trend plot w/forecast (4pts) – Sprint 3 (May 9 – May 23)
+17.	Initiative2.Epic2.Story4: Web app construction (8pts) – Sprint 3 (May 9 – May 23)
+18.	Initiative2.Epic4.Story1: Unit Tests for Model (2pts) – Sprint 4 (May 23 – June 6)
+19.	Initiative2.Epic4.Story2: Unit Tests for UI (2pts) – Sprint 4 (May 23 – June 6)
+20.	Initiative2.Epic4.Story3: Beta roll-out (4pts) – Sprint 4 (May 23 – June 6)
+21.	Initiative2.Epic4.Story4: Send link to beta testers (1pts) – Sprint 4 (May 23 – June 6)
+22.	Initiative2.Epic4.Story5: Update UI Based on Feedback(8pts) – Sprint 4 (May 23 – June 6)
+23.	Initiative2.Epic5.Story1: Git Housekeeping and reqs check (2pts) – Sprint 4 (May 23 – June 6)
+24.	Initiative2.Epic5.Story2: Final Presentation & Demo Dev (4pts) – Sprint 4 (May 23 – June 6)
+25.	Initiative2.Epic5.Story3: Collect Presentation Feedback (2pts) – Sprint 4 (May 23 – June 6)
+26.	Initiative2.Epic5.Story4: Final modifications and roll-out (4pts) – Sprint 4 (May 23 – June 6)
+
+### Icebox
+1.	Initiative1.Epic3.Story6: Forecasting at the USA State Level
+2.	Initiative1.Epic4: Ensemble Models
+3.	Initiative2.Epic2.Story3: USA State Level Plots
+4.	Initiative2.Epic3: Descriptive Analyses
 
 ## Directory structure 
 
