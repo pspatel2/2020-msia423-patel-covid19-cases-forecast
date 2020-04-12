@@ -33,19 +33,15 @@ __QA__: [Greesham Simon](https://github.com/greeshamsimon)
 ## Project Charter
 
 ### Mission:
-Coronavirus is a family of viruses that can cause illness, which can vary from common cold to more severe illnesses such as the current pandemic known as COVID-19. As the COVID-19 pandemic accelerates at a frightening pace, most of world’s governments have issued orders for their citizens to stay at home to minimize the spread of the virus. There is a lot of uncertainty around the virus and its spread which adds to the fear and panic around the situation. The primary focus of this app is to provide forecasting of COVID-19 cases in attempts to reduce some level of uncertainty.
+Coronavirus is a family of viruses that can cause illness, which can vary from the common cold to more severe illnesses such as the current pandemic known as COVID-19. As the COVID-19 pandemic accelerates at a frightening pace, most of world’s governments have issued orders for their citizens to stay at home to minimize the spread of the virus. There is a lot of uncertainty around the virus and its spread which adds to the fear and panic around the situation. The primary focus of this app is to provide forecasting of COVID-19 cases in attempts to reduce this level of uncertainty by some degree. Such a forecast could prove helpful not only to general public but also to politcal leaders and healthcare workers on the front lines.
 
 ### Vision:
 Utilize historical time series data of COVID-19 cases to forecast the number of expected COVID-19 cases for each day through the next week. This forecast will be computed at both the global level and the country level. Data is updated daily and is pulled via a free [API](https://covid19api.com/#details). This data is originally sourced by Johns Hopkins CSSE.
 
 ### Success Criteria
-__Machine Learning Performance Metric__:
+__Machine Learning Performance Metric__: Forecasting model achieves MAPE of 20% or less.
 
-Forecasting model achieves MAPE of 30% or less.
-
-__Business Metrics__:
-
-Inbound traffic of 100 unique users and 50% retention thereafter.
+__Business Metrics__: Inbound traffic of 100 unique users and 50% retention thereafter.
 
 ## Planned Work
 ### Initiative 1: Forecasting model to predict number of COVID-19 cases in the future
@@ -62,9 +58,11 @@ Inbound traffic of 100 unique users and 50% retention thereafter.
 - Story 1: Build and evaluate a linear regression model for forecasting as a baseline approach
 - Story 2: Build a Holt Winters Exponential Smoothing model
 - Story 3: Research on ARIMA modeling and build an ARIMA model
-- Story 4: Research RNN modeling
-- Story 5: Build RNN Model
-- Story 6: Repeat modeling process at the USA state level
+- Story 4: Research and build a Prophet model
+- Story 5: Research RNN modeling
+- Story 6: Build RNN Model
+- Story 7: Compare model performances and select final model
+- Story 8: Repeat modeling process at the USA state level
 
 **_Epic 4: Ensemble models_**
 - Story 1: Ensemble predictions from models built in Epic 3
@@ -76,7 +74,7 @@ Inbound traffic of 100 unique users and 50% retention thereafter.
 - Story 1: Create requirements.txt file so that the appropriate packages and their respective versions can be installed/loaded in any environment/container
 - Story 2: Set-up a S3 bucket/instance and store raw data here
 - Story 3: Create script to pull daily data from the API and append to data in S3
-= Story 4: Initialize RDS database with model results
+- Story 4: Initialize RDS database with model results
 
 **_Epic 2: Front end interface for model results_**
 - Story 1: Global trend plot with forecasted values shown
@@ -85,8 +83,9 @@ Inbound traffic of 100 unique users and 50% retention thereafter.
 - Story 4: Write the script to deploy the Flask app 
 
 **_Epic 3: Descriptive analyses_**
-- Story 1: Global geospatial map to show current state of COVID-19
-- Story 2: Racing bar chart or alternative viz to show the spread of the virus
+- Story 1: Global geospatial map to show time lapse and current state of COVID-19 cases
+- Story 2: Racing bar chart (as alt viz) to show the spread of the virus
+- Story 3: Top trending news headlines 
 
 **_Epic 4: Product tests and refinement_**
 - Story 1: Create tests to confirm model functionality
@@ -118,30 +117,32 @@ __Sprint Sizing Legend:__
 6.	Initiative1.Epic3.Story1: Linear Regression & Eval (4pts) -- Sprint 1 (April 11 - April 25)
 7.	Initiative1.Epic3.Story2: Holt Winters Model (2pts) -- Sprint 2 (April 11 - April 25)
 8.	Initiative1.Epic3.Story3: ARIMA Modeling (4pts) -- Sprint 2 (April 11 - April 25)
-9.	Initiative1.Epic3.Story4: Research LSTM (2pts) -- Sprint 2 (April 25 - May 9)
-10.	Initiative1.Epic3.Story5: Build LSTM (4pts) -- Sprint 2 (April 25 - May 9)
-11.	Initiative2.Epic1.Story1: requirements.txt file (1pts) – Sprint 3 (May 9 – May 23)
-12.	Initiative2.Epic1.Story2: Set up S3 instance (2pts) – Sprint 3 (May 9 – May 23)
-13.	Initiative2.Epic1.Story3: Daily data append to S3 (4pts) – Sprint 3 (May 9 – May 23)
-14.	Initiative2.Epic1.Story4: Initialize RDS database (4pts) – Sprint 3 (May 9 – May 23)
-15.	Initiative2.Epic2.Story1: Global trend plot w/forecast (2pts) – Sprint 3 (May 9 – May 23)
-16.	Initiative2.Epic2.Story2: Country trend plot w/forecast (4pts) – Sprint 3 (May 9 – May 23)
-17.	Initiative2.Epic2.Story4: Web app construction (8pts) – Sprint 3 (May 9 – May 23)
-18.	Initiative2.Epic4.Story1: Unit Tests for Model (2pts) – Sprint 4 (May 23 – June 6)
-19.	Initiative2.Epic4.Story2: Unit Tests for UI (2pts) – Sprint 4 (May 23 – June 6)
-20.	Initiative2.Epic4.Story3: Beta roll-out (4pts) – Sprint 4 (May 23 – June 6)
-21.	Initiative2.Epic4.Story4: Send link to beta testers (1pts) – Sprint 4 (May 23 – June 6)
-22.	Initiative2.Epic4.Story5: Update UI Based on Feedback(8pts) – Sprint 4 (May 23 – June 6)
-23.	Initiative2.Epic5.Story1: Git Housekeeping and reqs check (2pts) – Sprint 4 (May 23 – June 6)
-24.	Initiative2.Epic5.Story2: Final Presentation & Demo Dev (4pts) – Sprint 4 (May 23 – June 6)
-25.	Initiative2.Epic5.Story3: Collect Presentation Feedback (2pts) – Sprint 4 (May 23 – June 6)
-26.	Initiative2.Epic5.Story4: Final modifications and roll-out (4pts) – Sprint 4 (May 23 – June 6)
+8.	Initiative1.Epic3.Story4: Prophet Modeling (2pts) -- Sprint 2 (April 11 - April 25)
+9.	Initiative1.Epic3.Story5: Research LSTM (2pts) -- Sprint 2 (April 25 - May 9)
+10.	Initiative1.Epic3.Story6: Build LSTM (4pts) -- Sprint 2 (April 25 - May 9)
+11. Initiative1.Epic3.Story7: Compare models and select final (1pts) -- Sprint 2 (April 25 - May 9)
+12.	Initiative2.Epic1.Story1: requirements.txt file (1pts) – Sprint 3 (May 9 – May 23)
+13.	Initiative2.Epic1.Story2: Set up S3 instance (2pts) – Sprint 3 (May 9 – May 23)
+14.	Initiative2.Epic1.Story3: Daily data append to S3 (4pts) – Sprint 3 (May 9 – May 23)
+15.	Initiative2.Epic1.Story4: Initialize RDS database (4pts) – Sprint 3 (May 9 – May 23)
+16.	Initiative2.Epic2.Story1: Global trend plot w/forecast (2pts) – Sprint 3 (May 9 – May 23)
+17.	Initiative2.Epic2.Story2: Country trend plot w/forecast (4pts) – Sprint 3 (May 9 – May 23)
+18.	Initiative2.Epic2.Story4: Web app construction (8pts) – Sprint 3 (May 9 – May 23)
+19.	Initiative2.Epic4.Story1: Unit Tests for Model (2pts) – Sprint 4 (May 23 – June 6)
+20.	Initiative2.Epic4.Story2: Unit Tests for UI (2pts) – Sprint 4 (May 23 – June 6)
+21.	Initiative2.Epic4.Story3: Beta roll-out (4pts) – Sprint 4 (May 23 – June 6)
+22.	Initiative2.Epic5.Story1: Git Housekeeping and reqs check (2pts) – Sprint 4 (May 23 – June 6)
+23.	Initiative2.Epic5.Story2: Final Presentation & Demo Dev (4pts) – Sprint 4 (May 23 – June 6)
+24.	Initiative2.Epic5.Story3: Collect Presentation Feedback (2pts) – Sprint 4 (May 23 – June 6)
+25.	Initiative2.Epic5.Story4: Final modifications and roll-out (4pts) – Sprint 4 (May 23 – June 6)
 
 ### Icebox
-1.	Initiative1.Epic3.Story6: Forecasting at the USA State Level
+1.	Initiative1.Epic3.Story7: Forecasting at the USA State Level
 2.	Initiative1.Epic4: Ensemble Models
 3.	Initiative2.Epic2.Story3: USA State Level Plots
 4.	Initiative2.Epic3: Descriptive Analyses
+5.	Initiative2.Epic4.Story4: Send link to beta testers (1pts)
+6.	Initiative2.Epic4.Story5: Update UI Based on Feedback(8pts)
 
 ## Directory structure 
 
