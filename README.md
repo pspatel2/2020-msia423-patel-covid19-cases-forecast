@@ -39,7 +39,7 @@ Coronavirus is a family of viruses that can cause illness, which can vary from t
 Utilize historical time series data of COVID-19 cases to forecast the number of expected COVID-19 cases for each day through the next week. This forecast will be computed at both the global level and the country level. Data is updated daily and is pulled via a free [API](https://covid19api.com/#details). This data is originally sourced by Johns Hopkins CSSE.
 
 ### Success Criteria
-__Machine Learning Performance Metric__: Forecasting model achieves MAPE of 20% or less.
+__Machine Learning Performance Metric__: Forecasting model achieves walk-forward averaged MAPE of 25% or less.
 
 __Business Metrics__: Inbound traffic of 100 unique users and 50% retention thereafter.
 
