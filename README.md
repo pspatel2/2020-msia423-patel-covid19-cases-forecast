@@ -33,13 +33,13 @@ __QA__: [Greesham Simon](https://github.com/greeshamsimon)
 ## Project Charter
 
 ### Mission:
-Coronavirus is a family of viruses that can cause illness, which can vary from the common cold to more severe illnesses such as the current pandemic known as COVID-19. As the COVID-19 pandemic accelerates at a frightening pace, most of world’s governments have issued orders for their citizens to stay at home to minimize the spread of the virus. There is a lot of uncertainty around the virus and its spread which adds to the fear and panic around the situation. The primary focus of this app is to provide forecasting of COVID-19 cases in attempts to reduce this level of uncertainty by some degree. Such a forecast could prove helpful not only to general public but also to politcal leaders and healthcare workers on the front lines.
+Coronavirus is a family of viruses that can cause illness, which can vary from the common cold to more severe illnesses such as the current pandemic known as COVID-19. As the COVID-19 pandemic accelerates at a frightening pace, most of world’s governments have issued orders for their citizens to stay at home to minimize the spread of the virus. There is a lot of uncertainty around the virus and its spread which adds to the fear and panic around the situation. The primary focus of this app is to provide forecasting of COVID-19 cases in attempts to reduce this level of uncertainty by some degree. Such a forecast could prove helpful not only to general public but also to politcal leaders and healthcare workers on the front lines. The second "MVP" of the app is the goal to serve as a "home-base" for users to get the forecasting information along with other statistics of the pandemic and headlines/links for the top trending news.
 
 ### Vision:
-Utilize historical time series data of COVID-19 cases to forecast the number of expected COVID-19 cases for each day through the next week. This forecast will be computed at both the global level and the country level. Data is updated daily and is pulled via a free [API](https://covid19api.com/#details). This data is originally sourced by Johns Hopkins CSSE.
+Utilize historical time series data of COVID-19 cases to forecast the number of expected COVID-19 cases for each day through the next week. This forecast will be computed at both the global level and the country level. Data is updated daily and is pulled via a free [API](https://covid19api.com/#details). This data is originally sourced by Johns Hopkins CSSE. Utilize one of the many free news APIs on the web or develop a custom scraper for achieving MVP 2 vision. 
 
 ### Success Criteria
-__Machine Learning Performance Metric__: Forecasting model achieves walk-forward averaged MAPE of 25% or less.
+__Machine Learning Performance Metric__: Forecasting model achieves forward-chaining averaged MAPE of 15% or less.
 
 __Business Metrics__: Inbound traffic of 100 unique users and 50% retention thereafter.
 
@@ -56,7 +56,7 @@ __Business Metrics__: Inbound traffic of 100 unique users and 50% retention ther
 
 **_Epic 3: Model development_**
 - Story 1: Build and evaluate a linear regression model for forecasting as a baseline approach
-- Story 2: Build a Holt Winters Exponential Smoothing model
+- Story 2: Build a Holt Linear model
 - Story 3: Research on ARIMA modeling and build an ARIMA model
 - Story 4: Research and build a Prophet model
 - Story 5: Research RNN modeling
@@ -85,7 +85,8 @@ __Business Metrics__: Inbound traffic of 100 unique users and 50% retention ther
 **_Epic 3: Descriptive analyses_**
 - Story 1: Global geospatial map to show time lapse and current state of COVID-19 cases
 - Story 2: Racing bar chart (as alt viz) to show the spread of the virus
-- Story 3: Top trending news headlines 
+- Story 3: Top trending COVID-19 news API or scraper code
+- Story 4: Viz/link UI for top news results
 
 **_Epic 4: Product tests and refinement_**
 - Story 1: Create tests to confirm model functionality
