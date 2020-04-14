@@ -94,6 +94,7 @@ __Business Metrics__: Inbound traffic of 100 unique users and 50% retention ther
 - Story 3: Adjust product based on test results and roll out closed prototype of the app
 - Story 4: Send link to prototype to beta users for feedback
 - Story 5: Improve UI based on beta user feedback
+- Story 6: As data accumulates explore forecasting accuracy beyond 7 days
 
 **_Epic 5: Release and Demo_**
 - Story 1: Verify git repo is up to date, clean, and confirm all deliverables are met per requirements
@@ -144,6 +145,7 @@ __Sprint Sizing Legend:__
 4.	Initiative2.Epic3: Descriptive Analyses
 5.	Initiative2.Epic4.Story4: Send link to beta testers (1pts)
 6.	Initiative2.Epic4.Story5: Update UI Based on Feedback(8pts)
+6.	Initiative2.Epic4.Story6: Update UI Based on Feedback(4pts)
 
 ## Directory structure 
 
