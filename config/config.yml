@@ -1,0 +1,4 @@
+data_acquisition:
+  url: "https://api.covid19api.com/all"
+  s3_bucket_name: "nw-ppatel-s3"
+  output_file_path: "MSiA_423/data/covid_data/covid19_time_series_"
