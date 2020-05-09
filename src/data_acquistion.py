@@ -9,16 +9,22 @@ import sys
 import botocore.exceptions as botoexceptions
 
 """
-Warning: Running data_acquistion.py may take several minutes to run as API pull is 50+ MB. The API data parameters are not functioning at this time.
+Warning: Running data_acquistion.py may take several minutes to run as API pull is ~100MB. The API date parameters are not functioning at this time to filter down this data.
 """
 
-s3 = boto3.client("s3")
+#set-up logging
 logging.basicConfig(filename='logfile.log', filemode='a', level=logging.DEBUG, format="%(asctime)-15s %(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
 
+## try to connect to s3 prior to starting up any processing
+try:
+    s3 = boto3.client("s3")
+except botoexceptions.NoCredentialsError:
+    logger.error("Your AWS credentials were not found. Verify that they have been made available as detailed in readme instructions")
+
 def get_latest_date(bucket_name,output_file_path):
     """
-    Get date of the latest pull from the API
+    Get date of the most recent pull from the API
     Args:
         bucket_name (str): the name of S3 bucket containing the latest data
         output_file_path (str): s3 bucket file path where data has historically been written to
@@ -46,24 +52,29 @@ def get_latest_date(bucket_name,output_file_path):
     #convert to string format needed for querying API
     latest_date = latest_date_dt.strftime("%Y-%m-%d")
 
-    logger.debug("No user input start date. Latest date was fetched successfully")
+    logger.debug("No user input start date. Latest date was fetched successfully based on files within s3 repo")
     return latest_date
 
-def acquire_data(url,bucket_name, start_date=None,end_date=datetime.now().strftime("%Y-%m-%d")):
+def acquire_data(url, end_date,start_date=None,**kwargs):
     """
+
     Args:
         url (str): url for api to pull data from
-        bucket_name (str): s3 bucket name to which the data should be saved to
-        start_date (str): date which will be used as the date from which the data pull will begin from. If no argument is specified, the date of the last api call will be used.
-        end_date (str): date which will be used as the date up to which data will be pulled. If no argument is specified then today's date will be used.
+        end_date (str): date which will be used as the date up to which data will be pulled.
+        start_date (str or None): date which will be used as the date from which the data pull will begin from. If no argument is specified, arg is set to None and is updated with
+         the date of the last api call using the get_latest_date() function
+        **kwargs: Arbitrary keyword arguments
+            -output_file_path (str): s3 bucket file path where data has historically been written to
+            -bucket_name (str): s3 bucket name to which the data has been historically be saved to
 
     Returns:
         api_pull (dict): dict consisting of COVID-19 case information (number of confirmed cases, deaths, recovered) by country and date
-        end_date (str): max date in the data pulled
     """
     # If no arg was start_date was specified, get date of latest api pull
     if start_date == None :
-        latest_date = get_latest_date(bucket_name)
+        output_file_path = kwargs.get('output_file_path', None)
+        bucket_name= kwargs.get('bucket_name', None)
+        start_date = get_latest_date(bucket_name,output_file_path)
 
     # Make call to the API with exception handling
     payload = {}
@@ -73,10 +84,13 @@ def acquire_data(url,bucket_name, start_date=None,end_date=datetime.now().strfti
         response = requests.request("GET", url, params=params, headers=headers, data=payload)
     except requests.exceptions.ConnectionError:
         logger.error("There was a connection error to the API. Please try again or verify the URL and API status.")
+        sys.exit(1)
     except requests.exceptions.Timeout:
         logger.error("Timeout error, please try again. If problem persists, wait to try again until later")
+        sys.exit(1)
     except requests.exceptions.RequestException as e:
         logger.error("Unexpected error with the requested: {}".format(e))
+        sys.exit(1)
 
     # Handle error in the case that deserialization fails
     try:
@@ -87,12 +101,11 @@ def acquire_data(url,bucket_name, start_date=None,end_date=datetime.now().strfti
 
     logger.info("API call to COVID19-API was successful.")
 
-    return  api_pull, end_date
+    return  api_pull
 
 def write_data_to_s3(bucket_name, api_data, output_file_path,end_date):
     """
     Write data to s3 bucket
-
     Args:
         bucket_name (str): name of the desired s3 bucket to write to
         api_data (dict): raw data pull from COVID-19 API detailing numbers on cases, deaths, etc per day by country
@@ -102,11 +115,20 @@ def write_data_to_s3(bucket_name, api_data, output_file_path,end_date):
     Returns:
         None - data to be saved to s3 bucket
     """
-    #to-do: exception handling here
+
+    # generate filename for output written to s3 based on pull date
     filename = output_file_path + end_date +".json"
+    # put data in form that the put_object function accepts
     serializedAPIdata = json.dumps(api_data)
-    s3.put_object(Bucket=bucket_name,Key=filename,Body=serializedAPIdata)
-    logger.info("COVID-19 API Data was successfully saved to s3 bucket.")
+    # try to write object to s3 directly
+    try:
+        s3.put_object(Bucket=bucket_name,Key=filename,Body=serializedAPIdata)
+    except botoexceptions.ParamValidationError:
+        logger.error("There is an error in the data format. Verify the input to this function is still json format")
+    except Exception as e:
+        logger.error("Unexpected error in trying to write data to s3: {}".format(e))
+
+    logger.info("COVID-19 API Data was successfully saved to s3 bucket. File name is {}".format(filename))
 
 def run_data_acquistion(args):
     """
@@ -121,32 +143,34 @@ def run_data_acquistion(args):
     Returns:
         None
     """
+
+    ## open configuration file
     try:
         with open(args.config, "r") as f:
             config = yaml.load(f,Loader=yaml.FullLoader)
     except IOError:
         logger.error("Could not read in the config file--verify correct filename/path.")
 
+    ## assign variables based on configuration file
     url = config['data_acquisition']['url']
     s3_bucket =config['data_acquisition']['s3_bucket_name']
     output_path = config['data_acquisition']['output_file_path']
 
-    if args.start_date is not None and args.end_date is not None:
-        df, write_date = acquire_data(url,s3_bucket,args.start_date,args.end_date)
-    elif args.start_date is not None:
-        df, write_date = acquire_data(url,s3_bucket,args.start_date,)
-    elif args.end_date is not None:
-        df, write_date = acquire_data(url,s3_bucket,None,args.end_date)
+    # call the acquire_data function depending on if start_date is provided in the cmd line args
+    if args.start_date is not None:
+        api_data = acquire_data(url,args.end_date,args.start_date)
     else:
-        df, write_date = acquire_data(url,s3_bucket)
+        api_data = acquire_data(url, args.end_date,args.start_date,bucket_name=s3_bucket,output_file_path=output_path)
 
-    write_data_to_s3(s3_bucket,df,output_path,write_date)
+    #call function to write data to s3
+    write_data_to_s3(s3_bucket,api_data,output_path,args.end_date)
 
+# call function if it is explicitly called rather than if it is imported (for whatever reason)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Acquire data from web')
     parser.add_argument('--config', '-c', default = 'config.yml', help='path to yaml file with configurations')
     parser.add_argument('--start_date', '-sd', help='optional start date for data pull')
-    parser.add_argument('--end_date', '-ed', default='config.yml', help='optional end date for data pull')
+    parser.add_argument('--end_date', '-ed',default=datetime.now().strftime("%Y-%m-%d"), help='optional end date for data pull')
 
     args = parser.parse_args()
 
