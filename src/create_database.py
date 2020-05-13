@@ -5,6 +5,7 @@ import logging
 import argparse
 import os
 
+#set-up logging
 logging.basicConfig(filename='logfile.log', filemode='a', level=logging.DEBUG, format="%(asctime)-15s %(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class Country_Covid_Forecast(Base):
     date = Column(Date, unique=False, nullable=False)
     confirmed_cases_forecast = Column(Date,unique=False,nullable=False)
 
+
 def get_engine_string(RDS = False):
     """
     Get the engine string for the database connection.
@@ -63,7 +65,7 @@ def get_engine_string(RDS = False):
         return  engine_string
 
     else:
-        engine_string = 'sqlite:///data/covid_19_cases.db'
+        engine_string = 'sqlite:///data/msia423_covid19_db.db'
         return engine_string
 
 def create_db(args,SQL_URI=None):
@@ -80,7 +82,6 @@ def create_db(args,SQL_URI=None):
         RDS = eval(args.RDS)
         logger.info("RDS:%s"%RDS)
         SQL_URI = sql.create_engine(get_engine_string(RDS = RDS))
-
     #Base.metadata.drop_all(engine)
     Base.metadata.create_all(SQL_URI)
     logging.info("Database successfully created")
