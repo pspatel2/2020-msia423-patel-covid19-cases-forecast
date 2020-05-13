@@ -15,18 +15,12 @@ __QA__: [Greesham Simon](https://github.com/greeshamsimon)
     * [Icebox](#icebox)
 - [Directory structure](#directory-structure)
 - [Running the app](#running-the-app)
-  * [1. Initialize the database](#1-initialize-the-database)
-    + [Create the database with a single song](#create-the-database-with-a-single-song)
-    + [Adding additional songs](#adding-additional-songs)
-    + [Defining your engine string](#defining-your-engine-string)
-      - [Local SQLite database](#local-sqlite-database)
-  * [2. Configure Flask app](#2-configure-flask-app)
-  * [3. Run the Flask app](#3-run-the-flask-app)
-- [Running the app in Docker](#running-the-app-in-docker)
-  * [1. Build the image](#1-build-the-image)
-  * [2. Run the container](#2-run-the-container)
-  * [3. Kill the container](#3-kill-the-container)
-  * [Workaround for potential Docker problem for Windows.](#workaround-for-potential-docker-problem-for-windows)
+  * [1. Run Data Acquisition via Docker](#1-initialize-the-database)
+    + [Configuration Modifications](#configuration-modifications)
+    + [Docker Commands](#docker-commands)
+  * [2. Create the database](#2-create-database-locally-sqlite-or-on-amazon-rds)
+    + [Create Locally for SQLite](#local-database)
+    + [Create on RDS](#rds-database)
 
 <!-- tocstop -->
 
@@ -145,13 +139,13 @@ __Sprint Sizing Legend:__
 4.	Initiative2.Epic3: Descriptive Analyses
 5.	Initiative2.Epic4.Story4: Send link to beta testers (1pts)
 6.	Initiative2.Epic4.Story5: Update UI Based on Feedback(8pts)
-6.	Initiative2.Epic4.Story6: Update UI Based on Feedback(4pts)
+7.	Initiative2.Epic4.Story6: Update UI Based on Feedback(4pts)
 
 ## Directory structure 
 
 ```
 ├── README.md                         <- You are here
-├── api
+├── app
 │   ├── static/                       <- CSS, JS files that remain static
 │   ├── templates/                    <- HTML (or other code) that is templated and changes based on a set of inputs
 │   ├── boot.sh                       <- Start up script for launching app in Docker container.
@@ -178,11 +172,21 @@ __Sprint Sizing Legend:__
 │   ├── archive/                      <- Develop notebooks no longer being used.
 │   ├── deliver/                      <- Notebooks shared with others / in final state
 │   ├── develop/                      <- Current notebooks being used in development.
+│       │
+│       ├──pull_and_save_cases_data.ipynb/                   <- Notebook used to test pulling COVID19 cases data
+│       ├──pull_news_headlines.ipynb/                        <- Notebook used to test pulling news headlines for covid19
+│       ├──covid19_eda.ipynb/                                <- Notebook used to explore and plot covid19 data
+│       ├──covid19_forecasting_model_development.ipynb/      <- Notebook used for time series model development (global)
+│       ├──covid19_forecasting_model_development_country_level.ipynb/      <- Notebook used for time series model development (country)
+│       ├──covid19_forecasting_model_development.ipynb/      <- Notebook used for time series model development (global)
 │   ├── template.ipynb                <- Template notebook for analysis with useful imports, helper functions, and SQLAlchemy setup. 
 │
 ├── reference/                        <- Any reference material relevant to the project
 │
 ├── src/                              <- Source data for the project 
+│       ├──data_acquistion.ipynb/                            <- Script for pulling covid case data from API and writing to s3
+│       ├──create_database.ipynb/                            <- Script for creating either a SQLlite db or a RDS db
+│       ├──get_news.ipynb/                                   <- Script for getting BBC news headliens for covid-19
 │
 ├── test/                             <- Files necessary for running model tests (see documentation below) 
 │
@@ -191,119 +195,81 @@ __Sprint Sizing Legend:__
 ├── requirements.txt                  <- Python package dependencies 
 ```
 
-## Running the app
-### 1. Initialize the database 
+## Running the app (WIP)
 
-#### Create the database with a single song 
-To create the database in the location configured in `config.py` with one initial song, run: 
+### 1. Run Data Acquisition via Docker
 
-`python run.py create_db --engine_string=<engine_string> --artist=<ARTIST> --title=<TITLE> --album=<ALBUM>`
+#### Configuration Modifications
+First navigate to config.yml located in the config directory. Update the following two options:
+* s3_bucket_name &rarr; to the name of a s3 bucket that you own and would like the data to be written to
+* output_file_path &rarr; path in your s3 bucket that you want to save to (you can leave it as "" to save to s3 home)
 
-By default, `python run.py create_db` creates a database at `sqlite:///data/tracks.db` with the initial song *Radar* by Britney spears. 
-#### Adding additional songs 
-To add an additional song:
-
-`python run.py ingest --engine_string=<engine_string> --artist=<ARTIST> --title=<TITLE> --album=<ALBUM>`
-
-By default, `python run.py ingest` adds *Minor Cause* by Emancipator to the SQLite database located in `sqlite:///data/tracks.db`.
-
-#### Defining your engine string 
-A SQLAlchemy database connection is defined by a string with the following format:
-
-`dialect+driver://username:password@host:port/database`
-
-The `+dialect` is optional and if not provided, a default is used. For a more detailed description of what `dialect` and `driver` are and how a connection is made, you can see the documentation [here](https://docs.sqlalchemy.org/en/13/core/engines.html). We will cover SQLAlchemy and connection strings in the SQLAlchemy lab session on 
-##### Local SQLite database 
-
-A local SQLite database can be created for development and local testing. It does not require a username or password and replaces the host and port with the path to the database file: 
-
-```python
-engine_string='sqlite:///data/tracks.db'
-
-```
-
-The three `///` denote that it is a relative path to where the code is being run (which is from the root of this directory).
-
-You can also define the absolute path with four `////`, for example:
-
-```python
-engine_string = 'sqlite://///Users/cmawer/Repos/2020-MSIA423-template-repository/data/tracks.db'
-```
-
-
-### 2. Configure Flask app 
-
-`config/flaskconfig.py` holds the configurations for the Flask app. It includes the following configurations:
-
-```python
-DEBUG = True  # Keep True for debugging, change to False when moving to production 
-LOGGING_CONFIG = "config/logging/local.conf"  # Path to file that configures Python logger
-HOST = "0.0.0.0" # the host that is running the app. 0.0.0.0 when running locally 
-PORT = 5000  # What port to expose app on. Must be the same as the port exposed in app/Dockerfile 
-SQLALCHEMY_DATABASE_URI = 'sqlite:///data/tracks.db'  # URI (engine string) for database that contains tracks
-APP_NAME = "penny-lane"
-SQLALCHEMY_TRACK_MODIFICATIONS = True 
-SQLALCHEMY_ECHO = False  # If true, SQL for queries made will be printed
-MAX_ROWS_SHOW = 100 # Limits the number of rows returned from the database 
-```
-
-### 3. Run the Flask app 
-
-To run the Flask app, run: 
-
-```bash
-python app.py
-```
-
-You should now be able to access the app at http://0.0.0.0:5000/ in your browser.
-
-## Running the app in Docker 
-
-### 1. Build the image 
-
-The Dockerfile for running the flask app is in the `app/` folder. To build the image, run from this directory (the root of the repo): 
-
-```bash
- docker build -f app/Dockerfile -t pennylane .
-```
-
-This command builds the Docker image, with the tag `pennylane`, based on the instructions in `app/Dockerfile` and the files existing in this directory.
+Next open the aws_creds file in a text editor of your choice. Update both fields to correspond with your AWS account.
  
-### 2. Run the container 
-
-To run the app, run from this directory: 
-
-```bash
-docker run -p 5000:5000 --name test pennylane
+#### Docker commands
+Next, verify that you are in the 2020-msia423-patel-covid19-cases-forecast root directory. Issue the following command in order
+to build the docker image.
+    
 ```
-You should now be able to access the app at http://0.0.0.0:5000/ in your browser.
-
-This command runs the `pennylane` image as a container named `test` and forwards the port 5000 from container to your laptop so that you can access the flask app exposed through that port. 
-
-If `PORT` in `config/flaskconfig.py` is changed, this port should be changed accordingly (as should the `EXPOSE 5000` line in `app/Dockerfile`)
-
-### 3. Kill the container 
-
-Once finished with the app, you will need to kill the container. To do so: 
-
-```bash
-docker kill test 
+docker build -t covid19cases .
+```
+Last to execute the process, issue the following commmand:
+```
+docker run --env-file=aws_creds covid19cases src/data_acquistion.py --config=config/config.yml
 ```
 
-where `test` is the name given in the `docker run` command.
-
-### Workaround for potential Docker problem for Windows.
-
-It is possible that Docker will have a problem with the bash script `app/boot.sh` that is used when running on a Windows machine. Windows can encode the script wrongly so that when it copies over to the Docker image, it is corrupted. If this happens to you, try using the alternate Dockerfile, `app/Dockerfile_windows`, i.e.:
-
-```bash
- docker build -f app/Dockerfile_windows -t pennylane .
+### 2. Create database locally (SQLite) or on Amazon RDS
+The file create_database.py creates the database schema. Before continuing, if you do not have the docker container running
+from part 1 (Run Data Acquisition via Docker), please issue the following command from the 2020-msia423-patel-covid19-cases-forecast root directory
+```
+docker build -t covid19cases .
 ```
 
-then run the same `docker run` command: 
-
-```bash
-docker run -p 5000:5000 --name test pennylane
+#### Local Database: 
+To create the database locally,  run the command:
 ```
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data covid19cases src/create_database.py
+```
+To confirm the creation of the database (aside from reviewing the logfile), you can navigate to the data directory and find it
+there named as "msia423_covid19_db".
 
-The new image defines the entry command as `python3 app.py` instead of `./boot.sh`. Building the sample PennyLane image this way will require initializing the database prior to building the image so that it is copied over, rather than created when the container is run. Therefore, please **do the step [Create the database with a single song](#create-the-database-with-a-single-song) above before building the image**.
+#### RDS Database:
+To create the database in RDS, if you have not previously set-up some environment variables related to 
+your RDS account, you will need to do so now. To do so, fill out the rdsconfig file  (located in the config/ dir ) in
+its entirety. An explanation of the fields is as follows:
+* MYSQL_USER: the master username associated with your RDS DB instance (try using admin if you do not recall altering this)
+* MYSQL_PASSWORD: the password associated with the aforementioned master username 
+* MYSQL_HOST: RDS endpoint associated with your database
+* MYSQL_PORT: port associated with the RDS instance -- generally 3306
+
+Once you have done so, issue the commands: 
+```
+echo 'source config/rdsconfig' >> ~/.bashrc
+source ~/.bashrc
+```
+This will source the environment variables for use by your bash tool. Verify you are in the project root directory, 
+then execute the following command to create the database schema in RDS.
+```
+docker run --env MYSQL_HOST --env MYSQL_PORT --env MYSQL_USER --env MYSQL_PASSWORD covid19cases src/create_database.py --RDS=True
+```
+The database should now be set-up in your RDS instance. You can connect to your RDS database to verify the schema.
+Once you're connected, type:
+```
+use msia423_covid19_db;
+```
+Followed by:
+```
+show tables;
+```
+You should see:
+
+![image](../../rds_schema.PNG)
+
+Similarly you can review the schema of each table by issuing the command below, replacing "<table_name>"
+with the table of interest.
+```
+show columns from <table_name>;
+```
+A example result for the country_covid_daily_cases is shown below.
+
+![image](../../sample_table_schema.PNG)
