@@ -263,7 +263,7 @@ show tables;
 ```
 You should see:
 
-![image](../../rds_schema.PNG)
+![alt text](./figures/rds_schema.PNG)
 
 Similarly you can review the schema of each table by issuing the command below, replacing "<table_name>"
 with the table of interest.
@@ -272,4 +272,4 @@ show columns from <table_name>;
 ```
 A example result for the country_covid_daily_cases is shown below.
 
-![image](../../sample_table_schema.PNG)
+![image](./figures/sample_table_schema.PNG)
