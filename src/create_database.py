@@ -4,9 +4,10 @@ import sqlalchemy as sql
 import logging
 import argparse
 import os
+import logging.config
 
 #set-up logging
-logging.basicConfig(filename='logfile.log', filemode='a', level=logging.DEBUG, format="%(asctime)-15s %(levelname)-8s %(message)s")
+logging.config.fileConfig(fname="local.conf")
 logger = logging.getLogger(__name__)
 
 Base = declarative_base()
