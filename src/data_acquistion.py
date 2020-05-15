@@ -7,13 +7,14 @@ import json
 import boto3
 import sys
 import botocore.exceptions as botoexceptions
+import logging.config
 
 """
 Warning: Running data_acquistion.py may take several minutes to run as API pull is ~100MB. The API date parameters are not functioning at this time to filter down this data.
 """
 
 #set-up logging
-logging.basicConfig(filename='logfile.log', filemode='a', level=logging.DEBUG, format="%(asctime)-15s %(levelname)-8s %(message)s")
+logging.config.fileConfig(fname="local.conf")
 logger = logging.getLogger(__name__)
 
 ## try to connect to s3 prior to starting up any processing
@@ -21,6 +22,7 @@ try:
     s3 = boto3.client("s3")
 except botoexceptions.NoCredentialsError:
     logger.error("Your AWS credentials were not found. Verify that they have been made available as detailed in readme instructions")
+    sys.exit(1)
 
 def get_latest_date(bucket_name,output_file_path):
     """
@@ -46,7 +48,10 @@ def get_latest_date(bucket_name,output_file_path):
         sys.exit(1)
 
     # Get the most recent date modified from all files (will correspond to last API pull)
-    s3_objects = response['Contents']
+    try:
+        s3_objects = response['Contents']
+    except KeyError as e:
+        logger.error('There is no previous data from this acquisition pipeline in your s3 bucket. Please run again with an additional cmd line arg --start_date')
     most_recent_object = max(s3_objects, key=lambda x: x['LastModified'])
     latest_date_dt = most_recent_object['LastModified']
     #convert to string format needed for querying API
@@ -95,9 +100,9 @@ def acquire_data(url, end_date,start_date=None,**kwargs):
     # Handle error in the case that deserialization fails
     try:
         api_pull = response.json()
-        logger.info("Successfully made request to the API.")
     except ValueError:
         logger.error("No json returned from response.")
+        sys.exit(1)
 
     logger.info("API call to COVID19-API was successful.")
 

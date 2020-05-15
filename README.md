@@ -213,10 +213,11 @@ to build the docker image.
 ```
 docker build -t covid19cases .
 ```
-Last to execute the process, issue the following commmand:
+Last to execute the process, issue the following command:
 ```
-docker run --env-file=aws_creds covid19cases src/data_acquistion.py --config=config/config.yml
+docker run --env-file=aws_creds covid19cases src/data_acquistion.py --config=config/config.yml --start_date = "2020-01-01"
 ```
+The start_date arg has to be provided if data from this acquisition pipeline has never landed in your s3 instance before.
 
 ### 2. Create database locally (SQLite) or on Amazon RDS
 The file create_database.py creates the database schema. Before continuing, if you do not have the docker container running
