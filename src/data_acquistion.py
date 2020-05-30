@@ -1,6 +1,5 @@
 import requests
 from datetime import datetime
-import logging
 import argparse
 import yaml
 import json
@@ -8,7 +7,9 @@ import boto3
 import sys
 import botocore.exceptions as botoexceptions
 import logging.config
-
+import helper
+import os
+import glob
 """
 Warning: Running data_acquistion.py may take several minutes to run as API pull is ~100MB. The API date parameters are not functioning at this time to filter down this data.
 """
@@ -17,69 +18,84 @@ Warning: Running data_acquistion.py may take several minutes to run as API pull 
 logging.config.fileConfig(fname="local.conf")
 logger = logging.getLogger(__name__)
 
-## try to connect to s3 prior to starting up any processing
-try:
-    s3 = boto3.client("s3")
-except botoexceptions.NoCredentialsError:
-    logger.error("Your AWS credentials were not found. Verify that they have been made available as detailed in readme instructions")
-    sys.exit(1)
-
-def get_latest_date(bucket_name,output_file_path):
+def get_latest_date_s3(bucket_name,s3_output_path):
     """
-    Get date of the most recent pull from the API
+    Get date of the most recent pull from the API based on data within s3
     Args:
         bucket_name (str): the name of S3 bucket containing the latest data
-        output_file_path (str): s3 bucket file path where data has historically been written to
+        s3_output_path (str): s3 bucket file path where data has historically been written to
 
     Returns:
         latest_date (str): The date of the latest case in the existing date in string format
     """
-    # Get list of objects in the s3 bucket directory where the data is generally saved
-    try:
-        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=output_file_path)
-    except botoexceptions.ParamValidationError as error:
-        logger.error('The parameters you provided are incorrect: {}'.format(error))
-        sys.exit(1)
-    except botoexceptions.NoCredentialsError:
-        logger.error('Your AWS credentials could not be located. Please verify you have followed the appropriate steps outlined in the directions for this set-up')
-        sys.exit(1)
-    except botoexceptions.ClientError as error:
-        logger.error('Unexpected error with reaching the s3 bucket: {}'.format(error))
-        sys.exit(1)
 
-    # Get the most recent date modified from all files (will correspond to last API pull)
-    try:
-        s3_objects = response['Contents']
-    except KeyError as e:
-        logger.error('There is no previous data from this acquisition pipeline in your s3 bucket. Please run again with an additional cmd line arg --start_date')
-    most_recent_object = max(s3_objects, key=lambda x: x['LastModified'])
+    #call helper function to get most recent s3 object
+    most_recent_object = helper.get_latest_s3_data(bucket_name,s3_output_path)
+    #get date of most recent file
     latest_date_dt = most_recent_object['LastModified']
     #convert to string format needed for querying API
     latest_date = latest_date_dt.strftime("%Y-%m-%d")
-
-    logger.debug("No user input start date. Latest date was fetched successfully based on files within s3 repo")
+    logger.debug("No user input start date. Latest date was fetched successfully based on files within s3 repo. "
+                 "Latest date {}".format(latest_date))
     return latest_date
 
-def acquire_data(url, end_date,start_date=None,**kwargs):
-    """
+# def get_latest_date_local(local_path):
+#     """
+#     Get date of the most recent pull from the API based on data on local system
+#     Args:
+#         local_path (str): local path where raw data from API has historically been stored
+#
+#     Returns:
+#         latest_date (str): The date of the latest case in the existing date in string format
+#     """
+#
+#     # get list of files within the local path directory
+#     list_of_files = glob.glob(local_path + "*")
+#     # get the name of the most recently modified file
+#     latest_file = max(list_of_files, key=os.path.getctime)
+#     # Extract just the date string from full filename
+#     latest_date = latest_file[-15:-5]
+#     logger.info("No user input start date. Date of last file retrieved from local data folder. "
+#                 "Latest date: {}".format(latest_date))
+#     return latest_date
 
+def acquire_data(url,s3_flag,end_date,start_date=None,**kwargs):
+    """
+    Make GET request to API (COVID19API) to retrieve raw data
     Args:
         url (str): url for api to pull data from
         end_date (str): date which will be used as the date up to which data will be pulled.
-        start_date (str or None): date which will be used as the date from which the data pull will begin from. If no argument is specified, arg is set to None and is updated with
-         the date of the last api call using the get_latest_date() function
+        start_date (str or None): date which will be used as the date from which the data pull will begin from.
+        If no argument is specified, arg is set to None and date is automatically retrieved based on latest data in s3 or local
         **kwargs: Arbitrary keyword arguments
-            -output_file_path (str): s3 bucket file path where data has historically been written to
-            -bucket_name (str): s3 bucket name to which the data has been historically be saved to
+            -s3_output_path (str): s3 bucket file path where data has historically been written to. Only used if running pipeline in s3.
+            -bucket_name (str): s3 bucket name to which the data has been historically be saved to. Only used if running pipeline in s3.
 
     Returns:
         api_pull (dict): dict consisting of COVID-19 case information (number of confirmed cases, deaths, recovered) by country and date
     """
+
+    logger.info("Making GET request to COVID19 API")
+
     # If no arg was start_date was specified, get date of latest api pull
     if start_date == None :
-        output_file_path = kwargs.get('output_file_path', None)
-        bucket_name= kwargs.get('bucket_name', None)
-        start_date = get_latest_date(bucket_name,output_file_path)
+        # If running pipeline in s3, search s3 for latest data
+        if s3_flag == True:
+            try:
+                s3 = boto3.client("s3")
+            except botoexceptions.NoCredentialsError:
+                logger.error("Your AWS credentials were not found. Verify that they have been made available as "
+                             "detailed in readme instructions")
+                sys.exit(1)
+
+            s3_output_path = kwargs.get('s3_output_path', None)
+            bucket_name= kwargs.get('bucket_name', None)
+            start_date = get_latest_date_s3(bucket_name,s3_output_path)
+        # Otherwise running locally. In local flow, just keeping one copy of any given type of file. Set start_date as
+        # beginning of the year
+        else:
+            #start_date = get_latest_date_local(kwargs.get('local_path', None))
+            start_date = "2020-01-01"
 
     # Make call to the API with exception handling
     payload = {}
@@ -94,35 +110,42 @@ def acquire_data(url, end_date,start_date=None,**kwargs):
         logger.error("Timeout error, please try again. If problem persists, wait to try again until later")
         sys.exit(1)
     except requests.exceptions.RequestException as e:
-        logger.error("Unexpected error with the requested: {}".format(e))
+        logger.error("Unexpected error with the requested: {}:{}".format(type(e).__name__, e))
         sys.exit(1)
 
     # Handle error in the case that deserialization fails
     try:
         api_pull = response.json()
+        logger.info("API call to COVID19-API was successful.")
     except ValueError:
         logger.error("No json returned from response.")
         sys.exit(1)
 
-    logger.info("API call to COVID19-API was successful.")
-
     return  api_pull
 
-def write_data_to_s3(bucket_name, api_data, output_file_path,end_date):
+def write_data_to_s3(bucket_name, api_data, s3_output_path,end_date):
     """
-    Write data to s3 bucket
+    Write raw data retrieved from API GET request to s3 bucket
     Args:
         bucket_name (str): name of the desired s3 bucket to write to
         api_data (dict): raw data pull from COVID-19 API detailing numbers on cases, deaths, etc per day by country
-        output_file_path (str): s3 bucket file path for desired write location
+        s3_output_path (str): s3 bucket file path for desired write location
         end_date (str): date which will be used as the date up to which data will be pulled--fed in by previous function in chain
 
     Returns:
         None - data to be saved to s3 bucket
     """
 
+    ## try to connect to s3 prior to starting up any processing
+    try:
+        s3 = boto3.client("s3")
+    except botoexceptions.NoCredentialsError:
+        logger.error("Your AWS credentials were not found. Verify that they have been made available "
+                     "as detailed in readme instructions")
+        sys.exit(1)
+
     # generate filename for output written to s3 based on pull date
-    filename = output_file_path + end_date +".json"
+    filename = os.path.join(s3_output_path, "covid19_time_series_{}".format(end_date) + ".json")
     # put data in form that the put_object function accepts
     serializedAPIdata = json.dumps(api_data)
     # try to write object to s3 directly
@@ -130,14 +153,39 @@ def write_data_to_s3(bucket_name, api_data, output_file_path,end_date):
         s3.put_object(Bucket=bucket_name,Key=filename,Body=serializedAPIdata)
     except botoexceptions.ParamValidationError:
         logger.error("There is an error in the data format. Verify the input to this function is still json format")
+        sys.exit(1)
     except Exception as e:
-        logger.error("Unexpected error in trying to write data to s3: {}".format(e))
+        logger.error("Unexpected error in trying to write data to s3: {}:{}".format(type(e).__name__, e))
+        sys.exit(1)
 
     logger.info("COVID-19 API Data was successfully saved to s3 bucket. File name is {}".format(filename))
 
+def write_data_to_local(api_data,local_fname_out):
+    """
+    Write raw data retrieved from API GET request to local machine
+    Args:
+        api_data (dict): raw data pull from COVID-19 API detailing numbers on cases, deaths, etc per day by country
+        local_fname_out (str): local path (including filename) of where to save the raw data from the API GET request
+
+    Returns:
+
+    """
+
+    #filename = os.path.join(local_path, "covid19_time_series_{}".format(end_date) + ".json")
+    try:
+        with open(local_fname_out, 'w') as f:
+            json.dump(api_data, f)
+    except FileNotFoundError:
+        logger.error("It seems that the path you've provided does not exist. Please create the path or update the path in the config.yml file")
+    except Exception as e:
+        logger.error("Unexpected error in trying to write data to local: {}:{}".format(type(e).__name__, e))
+        sys.exit(1)
+
+    logger.info("COVID-19 API Data was successfully saved to local. File is located at {}".format(local_fname_out))
+
 def run_data_acquistion(args):
     """
-    Retrieves data via API call and saves to s3 bucket
+    Wrapper function that retrieves data via API call and saves to s3 bucket
 
     Args:
         args: From argparse, should contain args.config and optionally, args.start_date, args.end_date
@@ -146,9 +194,8 @@ def run_data_acquistion(args):
             args.end_date (str): If given, resulting API call will be given this as a param to filter out data past this date
 
     Returns:
-        None
+        None -- wrapper function that runs the acquisition steps for covid19 confirmed cases
     """
-
     ## open configuration file
     try:
         with open(args.config, "r") as f:
@@ -159,23 +206,28 @@ def run_data_acquistion(args):
     ## assign variables based on configuration file
     url = config['data_acquisition']['url']
     s3_bucket =config['data_acquisition']['s3_bucket_name']
-    output_path = config['data_acquisition']['output_file_path']
+    output_path = config['data_acquisition']['s3_output_path']
+    local_fname_out = config['data_acquisition']['local_fname_out']
 
     # call the acquire_data function depending on if start_date is provided in the cmd line args
     if args.start_date is not None:
         api_data = acquire_data(url,args.end_date,args.start_date)
     else:
-        api_data = acquire_data(url, args.end_date,args.start_date,bucket_name=s3_bucket,output_file_path=output_path)
+        api_data = acquire_data(url, args.end_date,args.start_date,bucket_name=s3_bucket,s3_output_path=output_path)
 
-    #call function to write data to s3
-    write_data_to_s3(s3_bucket,api_data,output_path,args.end_date)
+    #call function to write data either to s3 or local based on --s3 arg from cmd line
+    if args.s3_flag == True: 
+        write_data_to_s3(s3_bucket,api_data,output_path,args.end_date)
+    else:
+        write_data_to_local(api_data, local_fname_out)
 
 # call function if it is explicitly called rather than if it is imported (for whatever reason)
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Acquire data from web')
+    parser = argparse.ArgumentParser(description='Acquire covid19 cases data from web')
     parser.add_argument('--config', '-c', default = 'config.yml', help='path to yaml file with configurations')
     parser.add_argument('--start_date', '-sd', help='optional start date for data pull')
     parser.add_argument('--end_date', '-ed',default=datetime.now().strftime("%Y-%m-%d"), help='optional end date for data pull')
+    parser.add_argument("--s3", dest='s3_flag', action='store_true', help="Use arg if you want to save s3 rather than locally.")
 
     args = parser.parse_args()
 
