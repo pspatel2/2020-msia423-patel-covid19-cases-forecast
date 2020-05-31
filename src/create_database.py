@@ -62,20 +62,21 @@ def create_db(args):
     Creates a relational database with the data models inherited from Base
     Args:
         args: From argparse:
-            - contains the RDS flag used to determine where the database schema will be created
             - optional sql engine string argument can be entered
     Returns:
         None -- creates the database schema
     """
-    engine = helper.get_engine(args.RDS,args.engine_string)
-    Country_Covid_Forecast.__table__.drop(engine)
+    engine = helper.get_engine(args.engine_string)
+    try:
+        Country_Covid_Forecast.__table__.drop(engine)
+    except:
+        pass
     Base.metadata.create_all(engine)
     logging.info("Database successfully created")
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Create tables in covid19 database")
-    parser.add_argument("--RDS", dest='RDS',action='store_true',help="Use arg if if you want to create in RDS else None.")
     parser.add_argument("--engine_string", default=None, help="Optional engine string for sqlalchemy")
     args = parser.parse_args()
 

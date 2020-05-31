@@ -7,6 +7,7 @@ import os
 import sqlalchemy as sql
 from sqlalchemy import exc
 import pandas as pd
+import config
 
 logging.config.fileConfig(fname="local.conf")
 logger = logging.getLogger()
@@ -51,50 +52,34 @@ def get_latest_s3_data(bucket_name,s3_file_path):
     most_recent_object = max(s3_objects, key=lambda x: x['LastModified'])
     return most_recent_object
 
-def get_engine_string(RDS = False):
+def get_engine_string():
     """
     Get the engine string for the database connection.
     Args:
-    RDS(boolean): Flag for using  RDS vs local.
-        If True: creates the database schema in RDS
-        If False: creates the database schema locally in sqlite.
-
+        None
     Return:
-    engine_string (str): sqlalchemy string for the connection. String is dependent on:
-        If RDS = False -- returns the local path to sqlite location
-        If RDS = True -- returns engine string for RDS
+        engine_string (str): sqlalchemy string for the connection. Can be RDS or local depending on inputs in config.py
     """
-    # for RDS
-    if RDS==True:
-        # the engine_string format
-        # engine_string = "{conn_type}://{user}:{password}@{host}:{port}/{database}"
-        conn_type = "mysql+pymysql"
-        user = os.environ.get("MYSQL_USER")
-        password = os.environ.get("MYSQL_PASSWORD")
-        host = os.environ.get("MYSQL_HOST")
-        port = os.environ.get("MYSQL_PORT")
-        DATABASE_NAME = os.environ.get("MYSQL_DATABASE")
-        engine_string = "{}://{}:{}@{}:{}/{}".format(conn_type, user, password, host, port, DATABASE_NAME)
-        logging.debug("engine string: %s"%engine_string)
-        return  engine_string
-    # for local
-    else:
-        engine_string = 'sqlite:///data/msia423_covid19_db.db'
-        return engine_string
+    engine_string = config.SQLALCHEMY_DATABASE_URI
+    logging.debug("engine string: %s"%engine_string)
+    return  engine_string
 
-def get_engine(RDS=False,engine_string=None):
+def get_engine(engine_string=None):
     """
     Creates sqlalchemy engine
     Args:
-        RDS (boolean): Flag for using RDS vs local
         engine_string (str): sqlalchemy string for the connection
 
     Returns:
         engine (sqlalchemy.engine.base.Engine): sqlalchemy engine for database of interest
     """
     if engine_string is None:
-        logger.info("RDS:%s"%RDS)
-        engine_string = get_engine_string(RDS = RDS)
+        if config.host is not None:
+            logger.debug("RDS is being used")
+        else:
+            logger.debug("Local DB is being used")
+
+        engine_string = get_engine_string()
         engine = sql.create_engine(engine_string)
 
     else:
@@ -102,21 +87,21 @@ def get_engine(RDS=False,engine_string=None):
 
     return engine
 
-def add_to_database(df,table_name,if_exists_condition,RDS=False,engine_string=None):
+def add_to_database(df,table_name,if_exists_condition,engine_string=None):
     """
     Adds data from a pandas DataFrame to a local or RDS MySQL database
     Args:
         df (pandas DataFrame): DataFrame containing data to be added into the database of interest
         table_name (str): Name of the table the data should be added to
         if_exists_condition (str): Argument to determine what should be done if data already exists in the table
-        RDS (boolean): Flag for executing on RDS vs local.
-        engine_string (str): sqlalchemy string for connection to desired database
+        engine_string (str): sqlalchemy string for connection to desired database (optional input)
 
     Returns:
         None -- adds data to a MySQL database
 
     """
-    engine = get_engine(RDS,engine_string)
+    engine = get_engine(engine_string)
+
     try:
         df.to_sql(table_name,engine,if_exists=if_exists_condition,index=False)
         logger.debug("Data inserted into {}".format(table_name))
@@ -134,21 +119,19 @@ def add_to_database(df,table_name,if_exists_condition,RDS=False,engine_string=No
         logger.error("Unexpected error with the SQLAlchemy: {}:{}".format(type(error).__name__, error))
         sys.exit(1)
 
-def get_data_from_database(query,RDS=False,engine_string=None):
+def get_data_from_database(query,engine_string=None):
     """
     Retrieve data from a MySQL database on local machine or RDS
     Args:
         query (str): single string representing the query of interest
-        RDS (boolean): Flag for executing on RDS vs local.
-        engine_string (str): sqlalchemy string for connection to desired database
+        engine_string (str): sqlalchemy string for connection to desired database (optional input)
 
     Returns:
         df (pandas DataFrame): DataFrame containing results from input query
     """
 
     if engine_string is None:
-        logger.info("RDS:%s"%RDS)
-        engine_string = get_engine_string(RDS = RDS)
+        engine_string = get_engine_string()
         engine = sql.create_engine(engine_string)
     else:
         engine = sql.create_engine(engine_string)
