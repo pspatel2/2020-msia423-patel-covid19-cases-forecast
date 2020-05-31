@@ -1,4 +1,93 @@
 data_acquisition:
   url: "https://api.covid19api.com/all"
   s3_bucket_name: "nw-ppatel-s3"
-  output_file_path: "MSiA_423/data/covid_data/covid19_time_series_"
+  s3_output_path: "MSiA_423/data/covid_data/"
+  local_filepath_out: "data/covid19_time_series.json"
+
+data_preparation:
+  get_s3_data:
+    s3_bucket_name: "nw-ppatel-s3"
+    bucket_dir_path: "MSiA_423/data/covid_data/"
+  get_local_data:
+    input_file_path: "data/covid19_time_series.json"
+
+generate_trend_plots:
+  save_html_to_s3:
+    s3_bucket_name: "nw-ppatel-s3"
+    s3_output_path: "MSiA_423/app/static/"
+  save_html_to_local:
+    local_path: "app/static/"
+
+get_news:
+  acquire_data:
+    url: "https://newsapi.org/v2/top-headlines?sources=bbc-news,reuters,cbs-news"
+    params: '{"q":"virus"}'
+  write_data_to_s3:
+    s3_bucket_name: "nw-ppatel-s3"
+    s3_output_path: "MSiA_423/data/news_data/"
+  write_data_to_local:
+    local_filename: "app/static/news.txt"
+
+train_models:
+  global_model_configs:
+    nbr_days_forecast: 7
+    model_params:
+      p: 1
+      d: 1
+      q: 0
+    optional_fit_args:
+      start_params: !!python/none
+      trend: 'c'
+      method: 'css-mle'
+      trend: 'c'
+      solver: 'lbfgs'
+      maxiter: 500
+      tol: 1e-08
+    save_model_to_s3:
+      s3_bucket_name: "nw-ppatel-s3"
+      s3_output_path: "MSiA_423/models/global"
+    save_model_to_local:
+      local_path: "models/global/"
+      filename: "ARIMA_global_model"
+  country_model_configs:
+    model_params:
+      p: 1
+      d: 1
+      q: 0
+    optional_fit_args:
+      start_params: !!python/none
+      trend: 'c'
+      method: 'css-mle'
+      trend: 'c'
+      solver: 'lbfgs'
+      maxiter: 500
+      tol: 1e-08
+    save_model_to_s3:
+      s3_bucket_name: "nw-ppatel-s3"
+      s3_output_path: "MSiA_423/models/country"
+    save_model_to_local:
+      local_path: "models/country"
+
+generate_forecasts:
+  get_model:
+    local_model_path: "models/global"
+    input_filename:  "ARIMA_global_model"
+    s3_bucket_name:  "nw-ppatel-s3"
+    bucket_dir_path: "MSiA_423/models/global/20200526-030317"
+  get_global_forecast:
+    n_days: 7
+  get_country_list:
+    local_model_path: "models/country"
+    input_filename: "countries.pkl"
+    s3_bucket_name: "nw-ppatel-s3"
+    bucket_dir_path: "MSiA_423/models/country/220200526-030356"
+  get_country_forecast:
+    local_model_path: "models/country"
+    n_days: 7
+    s3_bucket_name: "nw-ppatel-s3"
+    bucket_dir_path: "MSiA_423/models/country/20200526-030356"
+
+generate_forecast_plots:
+  local_path: "app/static/"
+  s3_bucket_name: "nw-ppatel-s3"
+  s3_output_path: "MSiA_423/app/static/"
