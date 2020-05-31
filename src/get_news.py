@@ -9,6 +9,7 @@ import botocore.exceptions as botoexceptions
 import logging.config
 import os
 import ast
+import config
 
 logging.config.fileConfig(fname="local.conf")
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ def acquire_data(url,params):
     # convert string rep of dict to dict for params
     params = ast.literal_eval(params)
     # get apiKey from environment variable
-    params['apiKey'] = os.environ.get("NEWS_API_KEY")
+    params['apiKey'] = config.NEWS_API_KEY
     try:
         response = requests.get(url, params=params)
     except requests.exceptions.ConnectionError:
@@ -69,7 +70,7 @@ def write_data_to_s3(api_data,s3_bucket_name,s3_output_path):
         None - data to be saved to s3 bucket
     """
     # generate filename for output written to s3 based on pull date
-    filename = os.path.join(s3_output_path, "bbc_headlines_{}".format(datetime.now().strftime("%Y-%m-%d")) + ".json")
+    filename = os.path.join(s3_output_path, "news_headlines_{}".format(datetime.now().strftime("%Y-%m-%d")) + ".json")
     # put data in form that the put_object function accepts
     serializedAPIdata = json.dumps(api_data)
     # try to write object to s3 directly
