@@ -231,6 +231,7 @@ To create the database locally,  run the command:
 ```
 docker run --mount type=bind,source="$(pwd)"/data,target=/src/data covid19cases src/create_database.py
 ```
+
 To confirm the creation of the database (aside from reviewing the logfile), you can navigate to the data directory and find it
 there named as "msia423_covid19_db".
 
