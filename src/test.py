@@ -428,5 +428,7 @@ def run_unit_tests():
     # run unit tests for get_news.py
     test_write_data_to_local()
 
+
 if __name__ == '__main__':
     run_unit_tests()
+    logger.info("All tests were run successfully.")

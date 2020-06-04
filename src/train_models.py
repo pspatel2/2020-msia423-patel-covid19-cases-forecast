@@ -9,7 +9,7 @@ import logging.config
 import boto3
 import sys
 import botocore.exceptions as botoexceptions
-import time
+from datetime import datetime
 import os
 import unidecode
 import pickle
@@ -223,11 +223,11 @@ def save_global_model_s3(model,configfile,s3_bucket_name,s3_output_path):
         None -- saves trained model object to desired location
     """
     # generate filename for output written to s3 based on pull date
-    timestr = time.strftime("%Y%m%d-%H%M%S")
-    filename = 'ARIMA_global_{}'.format(timestr)
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    filename = 'ARIMA_global_{}'.format(date_str)
     # local path here is arbitrary since its within the docker container not on the host system
     local_path = 'models/global'
-    local_model_path= os.path.join(local_path,timestr)
+    local_model_path= os.path.join(local_path,date_str)
     os.mkdir(local_model_path)
     # save model and config to local
     filename = 'ARIMA_global_model'
@@ -235,7 +235,6 @@ def save_global_model_s3(model,configfile,s3_bucket_name,s3_output_path):
     model.save(local_file)
     with open(os.path.join(local_path,"config.yml"), 'w') as file:
         yaml.dump(configfile, file)
-    logger.info("Global model and config were successfully saved to local. They are located in the dir {} in ".format(local_model_path))
 
     try:
         s3 = boto3.client("s3")
@@ -244,8 +243,8 @@ def save_global_model_s3(model,configfile,s3_bucket_name,s3_output_path):
                      "in readme instructions")
         sys.exit(1)
 
-    s3_model_file = os.path.join(s3_output_path,timestr,filename)
-    s3_config_file = os.path.join(s3_output_path,timestr,"config_{}.yml".format(timestr))
+    s3_model_file = os.path.join(s3_output_path,date_str,filename)
+    s3_config_file = os.path.join(s3_output_path,date_str,"config_{}.yml".format(date_str))
 
     try:
         s3.upload_file(local_file, s3_bucket_name, s3_model_file)
@@ -255,10 +254,7 @@ def save_global_model_s3(model,configfile,s3_bucket_name,s3_output_path):
         sys.exit(1)
 
     logger.info("Global model and config were successfully saved to s3 bucket. They are located in the dir {} in "
-                "your s3 bucket".format(os.path.join(s3_output_path, timestr)))
-
-    logger.info("Global model and config were successfully saved to s3 bucket. They are located in the dir {} in your "
-                "s3 bucket".format(os.path.join(s3_output_path,timestr)))
+                "your s3 bucket".format(os.path.join(s3_output_path, date_str)))
 
 def save_country_models_local(df,configfile,local_path):
     """
@@ -328,27 +324,27 @@ def save_country_models_s3(df,configfile,s3_bucket_name,s3_output_path):
     countries = df['Country'].values
     # Get list of the models
     models = df['Model'].values
-    timestr = time.strftime("%Y%m%d-%H%M%S")
+    date_str = datetime.now().strftime("%Y-%m-%d")
     # Make a directory with the timestamp for the country models. The local path here is arbitrary as its only within
     # the docker container so didnt make it configurable
     local_path = "models/country"
-    os.makedirs(os.path.join(local_path, timestr))
+    os.makedirs(os.path.join(local_path, date_str))
     for i in range(len(countries)):
-        filename = 'ARIMA_{}_{}'.format(unidecode.unidecode(countries[i]), timestr)
+        filename = 'ARIMA_{}_{}'.format(unidecode.unidecode(countries[i]), date_str)
         model = models[i]
-        local_file = os.path.join(local_path, timestr, filename)
+        local_file = os.path.join(local_path, date_str, filename)
         model.save(local_file)
-        s3_model_file = os.path.join(s3_output_path, timestr, filename)
+        s3_model_file = os.path.join(s3_output_path, date_str, filename)
         try:
             s3.upload_file(local_file, s3_bucket_name, s3_model_file)
         except Exception as e:
             logger.error("Unexpected error in trying to write data to s3: {}:{}".format(type(e).__name__, e))
             sys.exit(1)
-    s3_config_file = os.path.join(s3_output_path, timestr, "config_{}.yml".format(timestr))
+    s3_config_file = os.path.join(s3_output_path, date_str, "config_{}.yml".format(date_str))
     countries_write = [unidecode.unidecode(x) for x in countries]
     with open(os.path.join(local_path, "countries.pkl"), 'wb') as f:
         pickle.dump(countries_write, f)
-    s3_countries = os.path.join(s3_output_path, timestr, "countries_{}.pkl".format(timestr))
+    s3_countries = os.path.join(s3_output_path, date_str, "countries_{}.pkl".format(date_str))
 
     try:
         s3.upload_file(configfile, s3_bucket_name, s3_config_file)
@@ -357,7 +353,7 @@ def save_country_models_s3(df,configfile,s3_bucket_name,s3_output_path):
         logger.error("Unexpected error in trying to write data to s3: {}:{}".format(type(e).__name__, e))
         sys.exit(1)
     logger.info("Country models and config were successfully saved to s3 bucket.They are located in the dir {}".format(
-        os.path.join(s3_output_path, timestr)))
+        os.path.join(s3_output_path, date_str)))
 
 def run_train_models(args):
     """
@@ -409,6 +405,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train time-series forecasting model(s) for COVID-19 confirmed case numbers')
     parser.add_argument('--config', '-c', default='config.yml', help='path to yaml file with configurations')
     parser.add_argument("--engine_string", default=None, help="Optional engine string for db to add data to ")
-    parser.add_argument('--s3', dest='s3_flag', default='store_true', help='Use arg if you want to save ')
+    parser.add_argument("--s3", dest='s3_flag', action='store_true', help="Use arg if you want to save s3 rather than locally.")
     args = parser.parse_args()
     run_train_models(args)
+
+    logger.info("train_models.py was run successfully.")

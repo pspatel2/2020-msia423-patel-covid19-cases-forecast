@@ -299,6 +299,19 @@ variable section in part 1a of this readMe for instructions on how to get a key 
 Please go to the Configuration Options section in part 1b. The same discussion applies here aside from the final sentence
 pertaining to the local database configuration in the config.py
 
+In addition, you will need to change some of the filename/pathing as the code expects certain things for finding files 
+in s3 and organizing outputs. Namely there are some potential changes to be made under the generate_forecasts part of the config.yml
+* If you have not made any s3 pathing changes to the "train_models" part of the config.yml since cloning the repo then simply do the following:
+    * For configs: get_model->bucket_dir_path, et_country_list->bucket_dir_path, get_country_list-> input_filename, and 
+    get_country_forecast->bucket_dir_path, update the date you say in the path to today's date. 
+* If you've altered s3 pathing to the "train_models" part of the config.yml, then you need do a little more.
+   * The config, get_model->bucket_dir_path, must have a path that matches the path under train_models->global_model_configs->save_model_to_s3
+   ->s3_output_path. Copy this path and add "/yyyy-mm-dd" to it, filled in with today's date as the value for the bucket_dir_path config
+   * Repeat this with the config, get_country_list->bucket_dir_path. Verify the path matches that under train_models->country_model_configs->
+   save_model_to_s3->s3_output_path. Add a "/yyyy-mm-dd" to the path, filled in with today's date.
+   * Follow the same exact steps as in the second bullet, but fore the config, get_country_forecast->bucket_dir_path
+   * Also in the config, get_country_list-> input_filename, add a "_yyyy-mm-dd" to the path, filled in with today's date
+
 #### 1d. Set-up for Running Program Fully in S3 and RDS
 
 ##### Environment Variables: 

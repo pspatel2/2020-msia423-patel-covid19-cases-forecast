@@ -177,6 +177,7 @@ def run_data_preparation(args):
     helper.add_to_database(country_df,"country_covid_daily_cases",'replace',args.engine_string)
     helper.add_to_database(global_df, "global_covid_daily_cases",'replace', args.engine_string)
 
+    logger.info("data_preparation.py was run successfully.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Get covid data from s3 and prep for modeling')

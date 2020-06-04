@@ -73,19 +73,19 @@ generate_forecasts:
     local_model_path: "models/global"
     input_filename:  "ARIMA_global_model"
     s3_bucket_name:  "nw-ppatel-s3"
-    bucket_dir_path: "MSiA_423/models/global/20200526-030317"
+    bucket_dir_path: "MSiA_423/models/global/2020-06-04"
   get_global_forecast:
     n_days: 7
   get_country_list:
     local_model_path: "models/country"
     input_filename: "countries.pkl"
     s3_bucket_name: "nw-ppatel-s3"
-    bucket_dir_path: "MSiA_423/models/country/220200526-030356"
+    bucket_dir_path: "MSiA_423/models/country/2020-06-04"
   get_country_forecast:
     local_model_path: "models/country"
     n_days: 7
     s3_bucket_name: "nw-ppatel-s3"
-    bucket_dir_path: "MSiA_423/models/country/20200526-030356"
+    bucket_dir_path: "MSiA_423/models/country/2020-06-04"
 
 generate_forecast_plots:
   local_path: "app/static/"

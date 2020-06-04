@@ -42,7 +42,7 @@ def get_model(s3_flag,local_model_path,input_filename,s3_bucket_name=None,bucket
         s3_file_path = os.path.join(bucket_dir_path, input_filename)
         s3.download_file(s3_bucket_name, s3_file_path, 'model_file')
         model = ARIMAResults.load('model_file')
-        logger.info("Model loaded from s3")
+        logger.debug("Model loaded from s3")
     else:
         model = ARIMAResults.load(os.path.join(local_model_path,input_filename))
 
@@ -120,9 +120,9 @@ def get_country_forecast(s3_flag,country,local_model_path,n_days,s3_bucket_name=
     """
     # If retrieving from s3
     if s3_flag == True:
-        timestr_use = bucket_dir_path[-15:]
-        input_filename = "ARIMA_{}_{}".format(country, timestr_use)
-        model = get_model(s3_flag,s3_bucket_name,bucket_dir_path,input_filename)
+        datestr_use = bucket_dir_path[-10:]
+        input_filename = "ARIMA_{}_{}".format(country, datestr_use)
+        model = get_model(s3_flag,local_model_path,input_filename,s3_bucket_name,bucket_dir_path)
         logger.debug("Model retrieved for {} from s3".format(country))
 
     # else retrieving local
@@ -164,6 +164,7 @@ def run_generate_forecasts(args):
         sys.exit(1)
 
     model = get_model(args.s3_flag,**config['generate_forecasts']['get_model'])
+    logger.info("Global model loaded")
     global_forecast_df = get_global_forecast(model,**config['generate_forecasts']['get_global_forecast'])
     helper.add_to_database(global_forecast_df, "global_covid_forecast",'replace', args.engine_string)
 
@@ -182,3 +183,5 @@ if __name__ == '__main__':
     parser.add_argument("--s3", dest='s3_flag', action='store_true', help="Use arg if you want to save s3 rather than locally.")
     args = parser.parse_args()
     run_generate_forecasts(args)
+
+    logger.info("data_acquistion.py was run successfully.")

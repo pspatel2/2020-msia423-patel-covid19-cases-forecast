@@ -177,3 +177,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run_generate_trend_plots(args)
+
+    logger.info("generate_trend_plots.py was run successfully.")

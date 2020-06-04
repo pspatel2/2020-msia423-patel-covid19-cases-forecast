@@ -201,11 +201,7 @@ def run_generate_forecast_plots(args):
     fig = generate_forecast_plot(global_forecast_df,global_plot_df)
     get_html_and_save(fig,args.s3_flag,'global_cases_forecast',**config['generate_forecast_plots'])
 
-    # country = 'Spain'
-    #country_forecast_df = get_country_forecasted_data(country,args.RDS,args.engine_string)
-    #country_plot_df = get_recent_country_confirmed_data(country,args.RDS, args.engine_string)
-    #fig = generate_forecast_plot(country_forecast_df,country_plot_df)
-    #get_html_and_save(fig,args.s3_flag,'country_cases_forecast',**config['generate_forecast_plots'])
+    logger.info("generate_forecast_plots.py was run successfully.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate trend plots with model forecast displayed')

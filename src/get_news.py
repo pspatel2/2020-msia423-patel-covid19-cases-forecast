@@ -101,7 +101,6 @@ def write_data_to_local(api_data,local_filename):
     Returns:
 
     """
-    #filename = os.path.join(local_path,"bbc_headlines_{}".format(datetime.now().strftime("%Y-%m-%d")) +".json")
     try:
         with open(local_filename, 'w') as f:
             json.dump(api_data, f)
