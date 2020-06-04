@@ -6,7 +6,6 @@ APP_NAME = "msia423-covid19-app"
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 HOST = "0.0.0.0"
 SQLALCHEMY_ECHO = False  # If true, SQL for queries made will be printed
-MAX_ROWS_SHOW = 50
 SEND_FILE_MAX_AGE_DEFAULT = 0
 
 # Connection string
@@ -14,7 +13,7 @@ DB_HOST = os.environ.get('MYSQL_HOST')
 DB_PORT = os.environ.get('MYSQL_PORT')
 DB_USER = os.environ.get('MYSQL_USER')
 DB_PW = os.environ.get('MYSQL_PASSWORD')
-DATABASE = os.environ.get('MYSQL_DATABASE')
+DATABASE_NAME = os.environ.get("MYSQL_DATABASE")
 DB_DIALECT = 'mysql+pymysql'
 
 if DB_HOST is None:
@@ -22,6 +21,6 @@ if DB_HOST is None:
 else:
     SQLALCHEMY_DATABASE_URI = '{dialect}://{user}:{pw}@{host}:{port}/{db}'.format(dialect=DB_DIALECT, user=DB_USER,
                                                                                   pw=DB_PW, host=DB_HOST, port=DB_PORT,
-                                                                                  db=DATABASE)
+                                                                                  db=DATABASE_NAME)
 
 
