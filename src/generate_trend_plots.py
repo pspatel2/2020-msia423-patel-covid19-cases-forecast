@@ -8,6 +8,7 @@ import yaml
 import argparse
 import plotly.express as px
 import plotly
+import plotly.graph_objects as go
 from datetime import datetime
 import numpy as np
 import os
@@ -29,12 +30,17 @@ def generate_global_line_plot(engine_string):
     query = """SELECT * FROM global_covid_daily_cases"""
     global_df = helper.get_data_from_database(query,engine_string)
 
-    # perform melt operation to get in form necessary
-    global_df = global_df.melt(id_vars="Date", value_vars=['Recovered', 'Deaths', 'Confirmed'],
-                     var_name='Case', value_name='Count')
+    # group data by date
+    global_df_date = global_df.groupby('Date')['Recovered', 'Deaths', 'Confirmed'].sum().reset_index()
 
     # create figure using plotly express
-    fig = px.area(global_df, x="Date", y="Count", color='Case', height=600, color_discrete_sequence=['green', 'red', 'cyan'])
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(x=global_df_date['Date'], y=global_df_date['Confirmed'], fill='tozeroy', name='Confirmed'))  # fill down to xaxis
+    fig.add_trace(go.Scatter(x=global_df_date['Date'], y=global_df_date['Deaths'], fill='tozeroy', name='Deaths'))  # fill down to xaxis
+    fig.add_trace(
+        go.Scatter(x=global_df_date['Date'], y=global_df_date['Recovered'], fill='tozeroy', name='Recovered'))  # fill down to xaxis
     fig.update_layout(xaxis_rangeslider_visible=True)
 
     # convert figure to html and save it out to s3 or local depending on the option specified

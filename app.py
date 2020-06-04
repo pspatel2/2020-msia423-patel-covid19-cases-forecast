@@ -8,7 +8,6 @@ import pickle
 from src.create_database import User_App_Inputs
 from datetime import datetime
 import plotly
-import os
 
 
 # Initialize the Flask application
@@ -16,7 +15,6 @@ app = Flask("msia423-covid19-app", template_folder="app/templates", static_folde
 
 # Configure flask app from flask_config.py
 app.config.from_pyfile('config/flaskconfig.py')
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 # Define LOGGING_CONFIG in flask_config.py - path to config file for setting
 # up the logger (e.g. config/logging/local.conf)
 logging.config.fileConfig(app.config["LOGGING_CONFIG"])
@@ -24,7 +22,6 @@ logger = logging.getLogger(app.config["APP_NAME"])
 
 # Initialize the database
 db = SQLAlchemy(app)
-
 
 @app.route('/')
 def index():
@@ -79,6 +76,9 @@ def add_entry():
         logger.info("New user input added to database")
     except TypeError:
         logger.warning("There was an issue with these inputs. Please verify age was submitted as an integer value. Error page returned")
+        return render_template('error.html')
+    except Exception:
+        logger.warning("There was an issue with these inputs. Please make sure you filled out all fields")
         return render_template('error.html')
 
     #if not valid, return error page.
