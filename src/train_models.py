@@ -394,6 +394,8 @@ def run_train_models(args):
     logger.warning("You may see some warnings issued from the ARIMA fit. Due to the nature of the data for some "
                    "countries, the fit/optimization algorithm encounters issues.")
     model_df = train_country_models(country_data,config['train_models']['country_model_configs']['model_params'],config['train_models']['country_model_configs']['optional_fit_args'])
+    avg_country_model_mape = model_df.MAPE.mean()
+    logger.info("Average MAPE across all country models: "+str(avg_country_model_mape))
     #save_country_models(model_df,args.config,args.s3_flag,**config['train_models']['country_model_configs']['save_model'])
 
     if args.s3_flag == True:

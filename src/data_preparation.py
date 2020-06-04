@@ -116,8 +116,15 @@ def get_country_daily(df):
         df (pandas DataFrame): Reduced columns version of the input DataFrame
     '''
     try:
-        df.drop(columns=["Province","City","CityCode","Lat","Lon"],inplace=True)
-        country_df = df.groupby(['Country','Date']).sum().reset_index()
+        # china has to be processed differently than all other countries
+        china_df = df.loc[df['Country'] == 'China']
+        china_df = china_df.drop(columns=["Province","City","CityCode","Lat","Lon"])
+        china_df = china_df.groupby(['Country','Date']).sum().reset_index()
+        # rest of the world
+        rest_of_the_world_df = df.loc[df['Province'] == '']
+        rest_of_the_world_df = rest_of_the_world_df.drop(columns=["Province","City","CityCode","Lat","Lon"])
+        rest_of_the_world_df = rest_of_the_world_df.groupby(['Country','Date']).sum().reset_index()
+        country_df = pd.concat([rest_of_the_world_df,china_df])
     except TypeError:
         logger.error("Your input to the function 'get_country_daily' was not a DataFrame and thus the function could not run")
         sys.exit(1)
@@ -139,7 +146,17 @@ def get_global_daily(df):
 
     """
     try:
-        global_df = df.groupby('Date').sum()[["Confirmed", "Recovered", "Active", "Deaths"]].reset_index()
+        ### STILL REQUIRE PROCESSING AT THE COUNTRY LEVEL FIRST TO GET RID OF DUPLICATE COUNTING
+        china_df = df.loc[df['Country'] == 'China']
+        china_df = china_df.drop(columns=["Province","City","CityCode","Lat","Lon"])
+        china_df = china_df.groupby(['Country','Date']).sum().reset_index()
+        # rest of the world
+        rest_of_the_world_df = df.loc[df['Province'] == '']
+        rest_of_the_world_df = rest_of_the_world_df.drop(columns=["Province","City","CityCode","Lat","Lon"])
+        rest_of_the_world_df = rest_of_the_world_df.groupby(['Country','Date']).sum().reset_index()
+        country_df = pd.concat([rest_of_the_world_df,china_df])
+        # now sum up to global
+        global_df = country_df.groupby('Date').sum()[["Confirmed", "Recovered", "Active", "Deaths"]].reset_index()
     except TypeError:
         logger.error("Your input to the function 'get_global_daily' was not a DataFrame and thus the function could not run")
         sys.exit(1)
