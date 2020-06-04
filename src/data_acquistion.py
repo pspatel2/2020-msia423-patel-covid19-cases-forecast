@@ -177,6 +177,10 @@ def write_data_to_local(api_data,local_filepath_out):
             json.dump(api_data, f)
     except FileNotFoundError:
         logger.error("It seems that the path you've provided does not exist. Please create the path or update the path in the config.yml file")
+        sys.exit(1)
+    except TypeError as e:
+        logger.error("The data you are trying to write as a json has an invalid structure. {}".format(e))
+        sys.exit(1)
     except Exception as e:
         logger.error("Unexpected error in trying to write data to local: {}:{}".format(type(e).__name__, e))
         sys.exit(1)
