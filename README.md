@@ -14,14 +14,30 @@ __QA__: [Greesham Simon](https://github.com/greeshamsimon)
     * [Backlog](#backlog)
     * [Icebox](#icebox)
 - [Directory structure](#directory-structure)
-- [Running the app](#running-the-app)
-  * [1. Run Data Acquisition via Docker](#1-initialize-the-database)
-    + [Configuration Modifications](#configuration-modifications)
-    + [Docker Commands](#docker-commands)
-  * [2. Create the database](#2-create-database-locally-sqlite-or-on-amazon-rds)
-    + [Create Locally for SQLite](#local-database)
-    + [Create on RDS](#rds-database)
-
+- [Running the Program End to End](#running-end-to-end)
+  * [1. Configuration and Environment Variable Set-up for Main Pipeline](#configuration_setup)
+    + [1a. Set-up for Running Program Completely Locally](#run-full-local) 
+        + [Environment Variables](#environment-variables-local) 
+        + [Configuration Modifications](#configuration-modifications-local)
+    + [1b. Set-up for Running Program Completely Locally Aside from Data Acquisition in s3](#run-mostly-local) 
+        + [Environment Variables](#environment-variables-local-s3) 
+        + [Configuration Modifications](#configuration-modifications-local-s3)
+    + [1c. Set-up for Running Program With Data Acq in s3, Database in RDS, All Else Local (DEFAULT)](#run-mix) 
+        + [Environment Variables](#environment-variables-local-mix) 
+        + [Configuration Modifications](#configuration-modifications-local-mix)
+    + [1d. Set-up for Running Program Fully in S3 and RDS](#run-no-local) 
+        + [Environment Variables](#environment-variables-no-local) 
+        + [Configuration Modifications](#configuration-modifications-no-local)
+  * [2. Run the Data Acquisition and Modeling Pipeline](#2-main-pipeline-execution)
+    + [Building the Docker Image](#docker-image) 
+    + [Run-time Options](#run-time-options)
+    + [Running the Pipeline](#run-pipeline)
+    + [Verifying a Sucessful Run](#verify-run)
+  * [3. Run the Web Application](#3-run-web-app)
+    + [Configurations](#app-configurations)
+    + [Using Docker to Run the App](#docker-run-app)
+    + [App Demo](#app-demo)
+  * [4. Code Unit Testing](#4-code-testing)
 <!-- tocstop -->
 
 ## Project Charter
@@ -195,83 +211,200 @@ __Sprint Sizing Legend:__
 ├── requirements.txt                  <- Python package dependencies 
 ```
 
-## Running the app (WIP)
+## Running the Program End to End
 
-### 1. Run Data Acquisition via Docker
+### 1. Configuration and Environment Variable Set-up for Main Pipeline
+Depending on how you decide to run the pipeline there can be quite a few different environment variables that need to be
+set and passed to the Docker container. In this section, the necessary configurations for each approach will be specified.
 
-#### Configuration Modifications
-First navigate to config.yml located in the config directory. Update the following two options:
-* s3_bucket_name &rarr; to the name of a s3 bucket that you own and would like the data to be written to
-* output_file_path &rarr; path in your s3 bucket that you want to save to (you can leave it as "" to save to s3 home)
+#### 1a. Set-up for Running the Complete Program Fully Local 
+In this scenario, the execution pipeline along with the app will run completely on your local machine. 
 
-Next open the aws_creds file in a text editor of your choice. Update both fields to correspond with your AWS account.
- 
-#### Docker commands
-Next, verify that you are in the 2020-msia423-patel-covid19-cases-forecast root directory. Issue the following command in order
-to build the docker image.
-    
-```
-docker build -t covid19cases .
-```
-Last to execute the process, issue the following command:
-```
-docker run --env-file=aws_creds covid19cases src/data_acquistion.py --config=config/config.yml --start_date = "2020-01-01"
-```
-The start_date arg has to be provided if data from this acquisition pipeline has never landed in your s3 instance before.
+##### Environment Variables: 
+In this case there is only one 'required' environment variable, which is an API key for the newsAPI. 
+However, the newsAPI is not a part of the modeling pipeline, it just pulls in news headlines for the webpage, thus it can
+also be skipped at the cost of this secondary functionality. To sign up for a newsAPI key, please go to the following page
+and follow the instructions: https://newsapi.org/register. You will be able to access the API key at the end of the 
+registration process. Next, open the __news_api_env__ file in the project root directory and enter your key where indicated.
+Do not add a space after the "=".
 
-### 2. Create database locally (SQLite) or on Amazon RDS
-The file create_database.py creates the database schema. Before continuing, if you do not have the docker container running
-from part 1 (Run Data Acquisition via Docker), please issue the following command from the 2020-msia423-patel-covid19-cases-forecast root directory
-```
-docker build -t covid19cases .
-```
+##### Configuration Options:
+In this scenario, there are no configurations that must be changed for a successful run, however there are many options
+you can adjust. The configurations that are the most common to change are discussed below.
+__config.py__: Navigate to the src folder and open the config.py file. 
+* In here you can change the "DATABASE_PATH" configuration to choose
+the name of the local database. Caution, if you change the path from "data/", you will need to adjust the docker mounts
+downstream to make sure the database saves out locally.
+* You can also adjust line 8 in this file if you have decided to source your newsAPI key under some other variable name.
+__config.yml__: Navigate to the config folder from the project root directory and open the config.yml file. The file is 
+laid out such that each script has its own configuration blocks and within that block each function in the script has its 
+own block. So you can intuitively locate the configurations you might want to change. With this layout, it is important 
+to recognize the output of one script is potentially the input of another, thus if you change output pathing, please look
+downstream to adjust the same path being taken in as an input downstream. An example is:  
+* Under "data_acquisition", you can adjust the "local_filepath_out" to choose where to save the raw covid-19 data locally.
+Note that if you choose to do this, you must also change the "input_file_path" config under "data_preparation-get_local_data".
 
-#### Local Database: 
-To create the database locally,  run the command:
-```
-docker run --mount type=bind,source="$(pwd)"/data,target=/src/data covid19cases src/create_database.py
-```
+This is all in terms of environmental variables and configurations for a full local run. You can jump onto the section
+"Run the Data Acquisition and Modeling Pipeline" for next steps if you are choosing to run completely locally.
 
-To confirm the creation of the database (aside from reviewing the logfile), you can navigate to the data directory and find it
-there named as "msia423_covid19_db".
+#### 1b. Set-up for Running Program Completely Locally Aside from Data Acquisition in s3
+In this scenario, the execution pipeline along with the app will run completely on your local machine other than the covid-19
+input data, which will be pulled from the API and saved to s3. It will then be accessed from s3 for subsequent steps.
 
-#### RDS Database:
-To create the database in RDS, if you have not previously set-up some environment variables related to 
-your RDS account, you will need to do so now. To do so, fill out the rdsconfig file  (located in the config/ dir ) in
-its entirety. An explanation of the fields is as follows:
-* MYSQL_USER: the master username associated with your RDS DB instance (try using admin if you do not recall altering this)
+##### Environment Variables: 
+You will __need__ to set environment variables for accessing s3. If you already are aware of the process to set these
+please do so in the manner of your choosing. Otherwise, in the root directory of the repo, there is a file called __aws_creds__. 
+Please open this file and enter the information within the file that is associated with your s3 account. Do not use 
+quotation marks or include any spaces in the file. Save this file and close it. How to use this file will be discussed 
+in a later section of this readMe. 
+
+In addition, for secondary functionality of the webapp, you will need to get a newsAPI key. Please refer to the environment
+variable section in part 1a of this readMe for instructions on how to get a key and its relative importance in this pipeline.
+
+##### Configuration Options:
+In this case, there is one particular configuration that must be changed for a successful run of the pipeline. Other configs
+such as local file pathing can be altered as explained in Configuration Options section in part 1a. 
+
+The configuration that __must__ modified is the name of the s3 bucket. Navigate to the config folder and open config.yml. 
+In this file change the value of the instances associated with the key '__s3_bucket_name__' in lines 3 and 9 of the file to 
+correspond to your s3 bucket name. You may change the bucket directory paths (lines 4 and 10) if you wish to as well. 
+If you do not, the default paths will be generated in your bucket.
+
+Please see the __config.py__ section in part 1a if you wish to configure the name of the local database data is written to.
+Otherwise a defaulted value will be used.
+
+#### 1c. DEFAULT: Set-up for Running Program With Data Acq in s3, Database in RDS, All Else Local
+This is the default method set in this repo. It is fairly similar to 1b aside from changing from a local SQLite database 
+to using an RDS instance.
+
+##### Environment Variables: 
+As discussed in part 1b of the the readMe, you will __need__ to set environment variables for accessing s3. Instructions
+on how to do so is localed in part 1b in the Environment Variables section. Other configs such as local file pathing can 
+again be altered as explained in Configuration Options section in part 1a.  
+
+In addition to this, you will also __need__ to 
+set your RDS configurations as environment variables. To do so, please open the file __rds_config__ in the repo root directory.
+file. The variables in this file should be adjusted according to your RDS instance--do not use quotation marks or spaces within the file
+A brief explanation of these variables are below:
+* MYSQL_USER: the master username associated with your RDS instance (try using admin if you do not recall altering this)
 * MYSQL_PASSWORD: the password associated with the aforementioned master username 
-* MYSQL_HOST: RDS endpoint associated with your database
+* MYSQL_HOST: RDS endpoint associated with your instance
 * MYSQL_PORT: port associated with the RDS instance -- generally 3306
+* DATABASE_NAME: Name of the database to work with
 
-Once you have done so, issue the commands: 
-```
-echo 'source config/rdsconfig' >> ~/.bashrc
-source ~/.bashrc
-```
-This will source the environment variables for use by your bash tool. Verify you are in the project root directory, 
-then execute the following command to create the database schema in RDS.
-```
-docker run --env MYSQL_HOST --env MYSQL_PORT --env MYSQL_USER --env MYSQL_PASSWORD covid19cases src/create_database.py --RDS=True
-```
-The database should now be set-up in your RDS instance. You can connect to your RDS database to verify the schema.
-Once you're connected, type:
-```
-use msia423_covid19_db;
-```
-Followed by:
-```
-show tables;
-```
-You should see:
+Finally, for secondary functionality of the webapp, you will need to get a newsAPI key. Please refer to the environment
+variable section in part 1a of this readMe for instructions on how to get a key and its relative importance in this pipeline.
 
-![alt text](./figures/rds_schema.PNG)
+##### Configuration Options:
+Please go to the Configuration Options section in part 1b. The same discussion applies here aside from the final sentence
+pertaining to the local database configuration in the config.py
 
-Similarly you can review the schema of each table by issuing the command below, replacing "<table_name>"
-with the table of interest.
-```
-show columns from <table_name>;
-```
-A example result for the country_covid_daily_cases is shown below.
+#### 1d. Set-up for Running Program Fully in S3 and RDS
 
-![image](./figures/sample_table_schema.PNG)
+##### Environment Variables: 
+Please go to the Environment Variables section of part 1c. These directions apply equivalently here.
+##### Configuration Options:
+This scenario is almost identical to part 1c. The only difference is that you will need to update the config.yml file a little more.
+Namely, you __must__ change the value associated with all instances (lines 3,9,16,26,47,66,75,82,87,92) of the key __s3_bucket_name__ to correspond to your s3 bucket.
+Similarly you can change (you don't have to though) any bucket directory path reference (lines 4,10,17,27,48,67,76,83,88,93) in the config.yml file--be careful to verify consistency. E.g.
+if you change an output path, it might be the input path for a downstream function. For any other configuration choices you
+can refer to the applicable section in part 1c.
+
+
+### 2. Run the Data Acquisition and Modeling Pipeline
+This section will discuss the building of the Docker image and the subsequent Docker run command to execute the pipeline for 
+modeling and retrieving all things needed for the webapp.
+
+#### Build the Docker Image
+For all of various choices of running the pipeline (with or without s3, with or without RDS, etc) the Docker image command
+remains tme same. From the root directory of the project repo, please issue the command below to build the image. You __must__
+replace "<image_name>" with a name of your choice.
+```angular2
+docker build -f="DockerfileBash" -t <image_name> .
+```
+
+#### Run-time Options
+Depending on which path you've chosen in part 1a-1d (full local, RDS or no RDS, etc) there will be a couple of modifications
+you may need to make. Particularly, since this code repo gives you the option of different levels of s3 usage, a command line arg
+is necessary where and when to use s3. Aside from this there a few command line args to be aware that apply to all choices 1a-1d.
+
+Storage approach dependent run-time options:
+* For option 1a (full local), please open the run_main_pipeline.sh in a text editor. Remove the --s3 from lines 4 and 10.
+* For options 1b and 1c, no changes are needed in the run_main_pipeline.sh. If you happened to have changed this and want
+to get back to the default, make sure there is a --s3 at the end of lines 4 and 10.
+* For option 1d (full s3), please open the run_main_pipeline.sh in a text editor. Add --s3 to lines 10,13,16,19,22, and 25
+
+General run-time options:
+The __data_acquisition.py__ script has a few command line args to be aware of. NOTE, the start_date and end_date API params 
+discussed below have been slated to be incorporated in the API but as of 6/1/2020, they are not yet functional.
+* --start_date: This is the date which will be used as the date from which the data pull will begin from. The rationale is 
+to prevent the app from having to go get 100 MB+ data each day and instead just getting the new data for previous day. If you use s3
+the code will automatically find the date of the last pull and use that as the start_date. It is key to note that this arg is set to
+'01-01-2020' in the default 'run_main_pipeline.sh' because the first time you use this script, you will not have a data file in your s3,
+which will not allow the code to find what it should use as the start date. For local, if no arg is specified, it defaults to '01-01-2020'.
+* --end_date: This is the date for which the date will be pulled until. This is default to the current date for obvious reasons.
+The reason this arg is available is in-case there is a correction in the data, then you can run the pipeline with the correction window specified
+using start_date and end_date args.
+
+#### Running the Pipeline
+To run the pipeline, a docker run command is issued. This command does look slightly different depending on the choice of run approach.
+E.g. which option 1a-1d. Regardless of the command used below, verify that you are in the project root directory before issuing it.
+
+* For 1a (full local) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static  --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+* For 1b (s3 data acq, all other local) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data -mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+* For 1c (1b and use RDS) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=rds_config --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+* For 1d (Full s3 and use RDS) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=rds_config --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+
+#### Verifying a Successful Run:
+This section details how to verify a successful run if you chose to run paths 1b or 1c. E.g. if you used s3 only for data acquisition.
+Look for the following artifacts in your local directory (if you left the default local pathing in the config.yml)
+* Directory: data/
+    * If you ran with a local database, you should find that object here
+* Directory: models/global
+    * ARIMA_global_model: Trained model object
+    * config.yml: The yml configuration used for this modeling run config.yml 
+* Directory: models/country
+    * ARIMA_{}: Models for many countries 
+    * config.yml: The yml configuration used for this modeling run 
+    * countries.pkl: Pickle file containing list of all countries for which a model was built 
+* Directory: app/static:
+    * global_cases: html file used by the webapp for ploting COVID-19 cases trends over time
+    * global_animation: html file used by the webapp to show time-lapse of COVID-19 spread across the global
+    * global_cases_forecast: html file for plot showing recent global case numbers and the near future forecasted numbers
+
+### 3. Run the Web Application
+Now that the modeling pipeline is complete and the necessary artifacts are acquired, the webapp can be run.
+
+A configuration change must be made if you choose to create a local database with a database name different than the default.
+If this is the case, navigate to the config folder and open up flaskconfig.py in an editor of your choice. Change line 20 to match
+the name you gave the local database. An optional change is to adjust the APP_NAME field in line 5 of the flaskconfig.py.
+
+Issue the following command from the project repo root directory to the build the Docker image for the web application. Replace
+"<image_name>" with a name of your choosing.
+```angular2
+docker build -f="DockerfileApp" -t <image_name> .
+```
+To boot the app, run the command below if you are working with a local database. You _need_ to replace "<image_name" with
+the image name you chose in the command above.
+```angular2
+docker run -p 5000:5000 <image_name>
+```
+or if you are working with an RDS database then issue:
+```angular2
+docker run --env-file=rds_config -p 5000:5000 msia423-covid19-app
+```
+To access the application:
+* MAC/Linux users go to: http://0.0.0.0:5000/
+* Windows users go to: http://localhost:5000/
