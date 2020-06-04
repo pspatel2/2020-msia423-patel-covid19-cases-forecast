@@ -13,3 +13,4 @@ unidecode>=1.1.1
 Flask>=1.1.2
 Flask_SQLAlchemy>=2.4.1
 psutil>=5.7.0
+pytest>=5.4.2
