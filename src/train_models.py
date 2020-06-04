@@ -67,7 +67,6 @@ def reduce_and_reshape_data(model_type, df):
 
     # if country models, take country, date, and confirmed fields
     elif (model_type =='country'):
-        table_name = 'country_covid_daily_cases'
         df = df[['Country','Date','Confirmed']]
 
     else:
@@ -95,7 +94,7 @@ def train_global_model(df,model_params,optional_fit_args):
     logger.info("Global daily forecasting model trained")
     return model_arima
 
-def foward_chaining_eval_global_model(df,model_params,optional_fit_args,nbr_days_forecast):
+def forward_chaining_eval_global_model(df,model_params,optional_fit_args,nbr_days_forecast):
     """
     Evaluate COVID19 global confirmed cases forecasting model using a walk forward validation approach
     Args:
@@ -383,7 +382,7 @@ def run_train_models(args):
     global_data = read_data_from_db('global',args.engine_string)
     confirmed_series = reduce_and_reshape_data('global',global_data)
     arima_model = train_global_model(confirmed_series,config['train_models']['global_model_configs']['model_params'],config['train_models']['global_model_configs']['optional_fit_args'])
-    eval_mape = foward_chaining_eval_global_model(confirmed_series,config['train_models']['global_model_configs']['model_params'],config['train_models']['global_model_configs']['optional_fit_args'],config['train_models']['global_model_configs']['nbr_days_forecast'])
+    eval_mape = forward_chaining_eval_global_model(confirmed_series,config['train_models']['global_model_configs']['model_params'],config['train_models']['global_model_configs']['optional_fit_args'],config['train_models']['global_model_configs']['nbr_days_forecast'])
     logger.info("Forward chaining MAPE for global forecasting model is: {}".format(str(eval_mape)))
    #save_global_model(arima_model,args.config,args.s3_flag,**config['train_models']['global_model_configs']['save_model'])
 
@@ -397,7 +396,7 @@ def run_train_models(args):
     country_data = reduce_and_reshape_data('country',country_data)
     logger.info("Training models for each country, this will take a few moments.")
     logger.warning("You may see some warnings issued from the ARIMA fit. Due to the nature of the data for some "
-                   "countries, the fit/optimization algorithm encounters issues, resulting in a poor model.")
+                   "countries, the fit/optimization algorithm encounters issues.")
     model_df = train_country_models(country_data,config['train_models']['country_model_configs']['model_params'],config['train_models']['country_model_configs']['optional_fit_args'])
     #save_country_models(model_df,args.config,args.s3_flag,**config['train_models']['country_model_configs']['save_model'])
 

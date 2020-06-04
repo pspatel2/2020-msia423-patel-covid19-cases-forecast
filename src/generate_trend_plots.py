@@ -136,8 +136,7 @@ def save_html_to_local(file_content,filename,local_path):
             logger.info("Html file was successfully saved to local machine. File is located at {}".format(local_file))
     except FileNotFoundError:
         logger.error("The local file path you've specified does not exist. Verify the path is correct in the config.yml")
-    except Exception as e:
-        logger.error("Unexpected error with trying to write plot html file locally: {}:{}".format(type(e).__name__, e))
+
 
 def run_generate_trend_plots(args):
     """
