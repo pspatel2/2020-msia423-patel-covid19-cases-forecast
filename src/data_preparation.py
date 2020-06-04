@@ -46,7 +46,8 @@ def get_s3_data(s3_bucket_name,bucket_dir_path,input_filename = None):
             sys.exit(1)
     # if filename is specified, retrieve the s3 object directly
     else:
-        logger.info("No user inputted file. Automatically fetching latest data from s3 bucket")
+        logger.info("No user inputted file for raw. Automatically fetching latest data from s3 bucket specified in configs."
+                    "This may take a minute.")
         s3_obj_key = helper.get_latest_s3_data(s3_bucket_name, bucket_dir_path)['Key']
         s3_obj = s3.get_object(Bucket=s3_bucket_name,Key=s3_obj_key)
 
@@ -114,8 +115,16 @@ def get_country_daily(df):
     Returns:
         df (pandas DataFrame): Reduced columns version of the input DataFrame
     '''
-    df.drop(columns=["Province","City","CityCode","Lat","Lon"],inplace=True)
-    country_df = df.groupby(['Country','Date']).sum().reset_index()
+    try:
+        df.drop(columns=["Province","City","CityCode","Lat","Lon"],inplace=True)
+        country_df = df.groupby(['Country','Date']).sum().reset_index()
+    except TypeError:
+        logger.error("Your input to the function 'get_country_daily' was not a DataFrame and thus the function could not run")
+        sys.exit(1)
+    except Exception as e:
+        logger.error("Unexpected error in the function 'get_country_daily': {}:{}".format(type(e).__name__, e))
+        sys.exit(1)
+
     return country_df
 
 def get_global_daily(df):
@@ -129,7 +138,15 @@ def get_global_daily(df):
         global_df (pandas DataFrame): Input DataFrame aggregated to the global daily level.
 
     """
-    global_df = df.groupby('Date').sum()[["Confirmed", "Recovered", "Active", "Deaths"]].reset_index()
+    try:
+        global_df = df.groupby('Date').sum()[["Confirmed", "Recovered", "Active", "Deaths"]].reset_index()
+    except TypeError:
+        logger.error("Your input to the function 'get_global_daily' was not a DataFrame and thus the function could not run")
+        sys.exit(1)
+    except Exception as e:
+        logger.error("Unexpected error in the function 'get_global_daily': {}:{}".format(type(e).__name__, e))
+        sys.exit(1)
+
     return global_df
 
 def run_data_preparation(args):
