@@ -356,12 +356,16 @@ the code will automatically find the date of the last pull and use that as the s
 '01-01-2020' in the default 'run_main_pipeline.sh' because the first time you use this script, you will not have a data file in your s3,
 which will not allow the code to find what it should use as the start date. For local, if no arg is specified, it defaults to '01-01-2020'.
 * --end_date: This is the date for which the date will be pulled until. This is default to the current date for obvious reasons.
-The reason this arg is available is in-case there is a correction in the data, then you can run the pipeline with the correction window specified
-using start_date and end_date args.
+The primary reason this arg is available (but not limited to) is in-case there is a correction in the data, then you can run the pipeline with 
+the correction window specified using start_date and end_date args.
 
 #### Running the Pipeline
 To run the pipeline, a docker run command is issued. This command does look slightly different depending on the choice of run approach.
 E.g. which option 1a-1d. Regardless of the command used below, verify that you are in the project root directory before issuing it.
+
+__NOTE__: The first  time you run the pipeline, the data acquisition step will pull 100+ MBs of data. Also as this is a relatively 
+newer API, there is no specified data update times listed in the documentation/website. It does say the data is updated several
+times a day. For most accurate near term forecasts, I would wait until later in the evening to run the pipeline. 
 
 * For 1a (full local) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
 ```angular2
