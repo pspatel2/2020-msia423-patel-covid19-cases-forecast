@@ -150,6 +150,7 @@ def write_data_to_s3(s3_bucket_name, api_data, s3_output_path,end_date):
     serializedAPIdata = json.dumps(api_data)
     # try to write object to s3 directly
     try:
+        logger.info("Pushing data to s3, this may take some time due to the large data size.")
         s3.put_object(Bucket=s3_bucket_name,Key=filename,Body=serializedAPIdata)
     except botoexceptions.ParamValidationError:
         logger.error("There is an error in the data format. Verify the input to this function is still json format")
