@@ -14,30 +14,28 @@ __QA__: [Greesham Simon](https://github.com/greeshamsimon)
     * [Backlog](#backlog)
     * [Icebox](#icebox)
 - [Directory structure](#directory-structure)
-- [Running the Program End to End](#running-end-to-end)
-  * [1. Configuration and Environment Variable Set-up for Main Pipeline](#configuration_setup)
-    + [1a. Set-up for Running Program Completely Locally](#run-full-local) 
-        + [Environment Variables](#environment-variables-local) 
-        + [Configuration Modifications](#configuration-modifications-local)
-    + [1b. Set-up for Running Program Completely Locally Aside from Data Acquisition in s3](#run-mostly-local) 
-        + [Environment Variables](#environment-variables-local-s3) 
-        + [Configuration Modifications](#configuration-modifications-local-s3)
-    + [1c. Set-up for Running Program With Data Acq in s3, Database in RDS, All Else Local (DEFAULT)](#run-mix) 
-        + [Environment Variables](#environment-variables-local-mix) 
-        + [Configuration Modifications](#configuration-modifications-local-mix)
-    + [1d. Set-up for Running Program Fully in S3 and RDS](#run-no-local) 
-        + [Environment Variables](#environment-variables-no-local) 
-        + [Configuration Modifications](#configuration-modifications-no-local)
-  * [2. Run the Data Acquisition and Modeling Pipeline](#2-main-pipeline-execution)
-    + [Building the Docker Image](#docker-image) 
+- [Running the Program Quick Start](#running-the-program-quick-start)
+- [Running the Program End to End Detailed Instructions](#running-the-program-end-to-end-detailed-instructions)
+  * [1. Configuration and Environment Variable Set-up for Main Pipeline](#1-configuration-and-environment-variable-set-up-for-main-pipeline)
+    + [1a. Set-up for Running Program Completely Locally](#1a-set-up-for-running-the-complete-program-fully-local) 
+        + [Environment Variables](#environment-variables) 
+        + [Configuration Options](#configuration-options)
+    + [1b. Set-up for Running Program Completely Locally Aside from Data Acquisition in s3](#1b-set-up-for-running-program-completely-locally-aside-from-data-acquisition-in-s3) 
+        + [Environment Variables](#environment-variables) 
+        + [Configuration Options](#configuration-options)
+    + [1c. Set-up for Running Program With Data Acq in s3, Database in RDS, All Else Local (DEFAULT)](#1c-default-set-up-for-running-program-with-data-acq-in-s3-database-in-rds-all-else-local) 
+        + [Environment Variables](#environment-variables) 
+        + [Configuration Options](#configuration-options)
+    + [1d. Set-up for Running Program Fully in S3 and RDS](#1d-set-up-for-running-program-fully-in-s3-and-rds) 
+        + [Environment Variables](#environment-variables) 
+        + [Configuration Options](#configuration-options)
+  * [2. Run the Data Acquisition and Modeling Pipeline](#2-run-the-data-acquisition-and-modeling-pipeline)
+    + [Building the Docker Image](#build-the-docker-image) 
     + [Run-time Options](#run-time-options)
-    + [Running the Pipeline](#run-pipeline)
-    + [Verifying a Sucessful Run](#verify-run)
-  * [3. Run the Web Application](#3-run-web-app)
-    + [Configurations](#app-configurations)
-    + [Using Docker to Run the App](#docker-run-app)
-    + [App Demo](#app-demo)
-  * [4. Code Unit Testing](#4-code-testing)
+    + [Running the Pipeline](#running-the-pipeline)
+    + [Verifying a Sucessful Run](#verifying-a-successful-run)
+  * [3. Run the Web Application](#3-run-the-web-application)
+  * [4. Code Unit Testing](#4-code-unit-testing)
 <!-- tocstop -->
 
 ## Project Charter
@@ -164,7 +162,6 @@ __Sprint Sizing Legend:__
 ├── app
 │   ├── static/                       <- CSS, JS files that remain static
 │   ├── templates/                    <- HTML (or other code) that is templated and changes based on a set of inputs
-│   ├── boot.sh                       <- Start up script for launching app in Docker container.
 │   ├── Dockerfile                    <- Dockerfile for building image to run app  
 │
 ├── config                            <- Directory for configuration files 
@@ -207,11 +204,39 @@ __Sprint Sizing Legend:__
 ├── test/                             <- Files necessary for running model tests (see documentation below) 
 │
 ├── app.py                            <- Flask wrapper for running the model 
-├── run.py                            <- Simplifies the execution of one or more of the src scripts  
 ├── requirements.txt                  <- Python package dependencies 
 ```
 
-## Running the Program End to End
+## Running the Program Quick Start 
+Note, in this section, instructions are written such that they apply as long as nothing from the cloned repo is changed.
+Instructions in the next section detail all the configurations that can be changed and the optionality of running the model
+pipeline and the app. This section focuses on running with all defaults and use the shortest path to have the app running 
+on your local instance. In particular, the quick start uses s3 for data acquisition but runs everything else locally
+including the database.
+
+##### Environment Variables: 
+You will __need__ to set environment variables for accessing s3. If you already are aware of the process to set these
+please do so in the manner of your choosing. Otherwise, in the root directory of the repo, there is a file called __aws_creds__. 
+Please open this file and enter the information within the file that is associated with your s3 account. Do not use 
+quotation marks or include any spaces in the file. Save this file and close it. The newsAPI is not a part of the modeling pipeline; rather
+it  pulls in news headlines for the webpage, thus it can be skipped at the cost of this secondary functionality. 
+To sign up for a newsAPI key, please go to the following page and follow the instructions: https://newsapi.org/register.
+You will be able to access the API key at the end of the registration process. Next, open the __news_api_env__ file in the 
+project root directory and enter your key where indicated. Do not add a space after the "=".
+
+##### Docker Image: 
+Build the docker image with the following command (place a name of your choosing that replaces "<image_name>")
+```
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data -mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+Run the model pipeline with the command below, again replacing "<image_name>":
+```
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data -mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+
+To run the app view the appropriate section in this readMe (section 3). 
+
+## Running the Program End to End Detailed Instructions
 
 ### 1. Configuration and Environment Variable Set-up for Main Pipeline
 Depending on how you decide to run the pipeline there can be quite a few different environment variables that need to be
@@ -425,3 +450,14 @@ docker run --env-file=rds_config -p 5000:5000 msia423-covid19-app
 To access the application:
 * MAC/Linux users go to: http://0.0.0.0:5000/
 * Windows users go to: http://localhost:5000/
+
+### 4. Code Unit Testing
+If you would like to run the unit testing script, first verify that you have built a docker image with bash as an entrypoint.
+The command to run for this is located at the beginning of section 2. Once you have done this, simply the run command below. Note
+you must change "<image_name>" to correspond with whatever you have named the docker image.
+```
+docker run <image_name> unit_tests.sh
+```
+Note, there are two csv files located in the data/sample directory in the git repo. These need to be present for some of the
+unit tests. If you happen to have .gitignore settings that were told to ignore .csvs or if you removed the .csvs, then
+you may encounter an error being thrown when running the unit tests.
