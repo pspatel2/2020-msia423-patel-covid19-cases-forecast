@@ -86,7 +86,10 @@ def test_get_country_daily():
     # generate data like before
     test_raw_data = [ {'Country': 'Armenia','CountryCode': 'AM','Province': '','City': '','CityCode': '','Lat': '40.07',
                        'Lon': '45.04','Confirmed': 1013,'Deaths': 13,'Recovered': 197,'Active': 803,
-                       'Date': '2020-04-12T00:00:00Z'}]
+                       'Date': '2020-04-12T00:00:00Z'},{'Country': 'China','CountryCode': 'CN','Province':
+                        'Inner Mongolia','City': '','CityCode': '','Lat': '44.09','Lon': '113.94','Confirmed': 190,
+                        'Deaths': 1,'Recovered': 83,'Active': 106,'Date': '2020-04-13T00:00:00Z'}]
+
     fname = 'raw_test_data.json'
 
     # run the function steps prior to this one
@@ -94,12 +97,19 @@ def test_get_country_daily():
     data = data_prep.get_local_data(fname)
     #call function being tested
     country_df = data_prep.get_country_daily(data)
+
     #generate what the output should be
     test = pd.DataFrame(test_raw_data)
     test['Active'] = test['Confirmed'] - test['Deaths'] - test['Recovered']
     test['Date'] = pd.to_datetime(test['Date'])
-    test.drop(columns=["Province","City","CityCode","Lat","Lon"],inplace=True)
-    test_country_df = test.groupby(['Country','Date']).sum().reset_index()
+    china_df = test.loc[test['Country'] == 'China']
+    china_df = china_df.drop(columns=["Province", "City", "CityCode", "Lat", "Lon"])
+    china_df = china_df.groupby(['Country', 'Date']).sum().reset_index()
+    rest_of_the_world_df = test.loc[test['Province'] == '']
+    rest_of_the_world_df = rest_of_the_world_df.drop(columns=["Province", "City", "CityCode", "Lat", "Lon"])
+    rest_of_the_world_df = rest_of_the_world_df.groupby(['Country', 'Date']).sum().reset_index()
+    test_country_df = pd.concat([rest_of_the_world_df, china_df])
+
     #assert expected output equals function output
     assert(country_df.equals(test_country_df))
     logger.info("data_preparation function get_country_daily happy path unit test is successful")

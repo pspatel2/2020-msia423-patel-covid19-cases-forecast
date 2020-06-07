@@ -125,7 +125,7 @@ def get_country_daily(df):
         rest_of_the_world_df = rest_of_the_world_df.drop(columns=["Province","City","CityCode","Lat","Lon"])
         rest_of_the_world_df = rest_of_the_world_df.groupby(['Country','Date']).sum().reset_index()
         country_df = pd.concat([rest_of_the_world_df,china_df])
-    except TypeError:
+    except AttributeError:
         logger.error("Your input to the function 'get_country_daily' was not a DataFrame and thus the function could not run")
         sys.exit(1)
     except Exception as e:
