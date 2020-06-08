@@ -14,8 +14,8 @@ __QA__: [Greesham Simon](https://github.com/greeshamsimon)
     * [Backlog](#backlog)
     * [Icebox](#icebox)
 - [Directory structure](#directory-structure)
-- [Running the Program Quick Start](#running-the-program-quick-start)
-- [Running the Program End to End Detailed Instructions](#running-the-program-end-to-end-detailed-instructions)
+- [Running the Program for MSiA 423 Grading Purposes](#running-the-program-for-msia-423-grading-purposes)
+- [Running the Program End to End](#running-the-program-end-to-end)
   * [1. Configuration and Environment Variable Set-up for Main Pipeline](#1-configuration-and-environment-variable-set-up-for-main-pipeline)
     + [1a. Set-up for Running Program Completely Locally](#1a-set-up-for-running-the-complete-program-fully-local) 
         + [Environment Variables](#environment-variables) 
@@ -207,8 +207,13 @@ __Sprint Sizing Legend:__
 ├── requirements.txt                  <- Python package dependencies 
 ```
 
-## Running the Program Quick Start 
-Note, in this section, instructions are written such that they apply as long as nothing from the cloned repo is changed.
+## Running the Program for MSiA 423 Grading Purposes
+Note, in this section, instructions are written primarily for grading purposes for the MSiA423 course. Please realize the webapp forecast
+plots may look strange with a gap between the final observation point and the first forecasted point. The code was created such
+that its expected new data is pulled from the API each day so the forecasting date starts with tomorrow. However the model is 
+agnostic to date and just outputs forecast for the next n points, without a date. So when old data is ran the forecast is attributed
+to the wrong dates unless the data is from yesterday.
+
 Instructions in the next section detail all the configurations that can be changed and the optionality of running the model
 pipeline and the app. This section focuses on running with all defaults and use the shortest path to have the app running 
 on your local instance. In particular, the quick start uses s3 for data acquisition but runs everything else locally
@@ -218,25 +223,36 @@ including the database.
 You will __need__ to set environment variables for accessing s3. If you already are aware of the process to set these
 please do so in the manner of your choosing. Otherwise, in the root directory of the repo, there is a file called __aws_creds__. 
 Please open this file and enter the information within the file that is associated with your s3 account. Do not use 
-quotation marks or include any spaces in the file. Save this file and close it. The newsAPI is not a part of the modeling pipeline; rather
-it  pulls in news headlines for the webpage, thus it can be skipped at the cost of this secondary functionality. 
-To sign up for a newsAPI key, please go to the following page and follow the instructions: https://newsapi.org/register.
-You will be able to access the API key at the end of the registration process. Next, open the __news_api_env__ file in the 
-project root directory and enter your key where indicated. Do not add a space after the "=".
+quotation marks or include any spaces in the file. Save this file and close it. 
+
+The newsAPI is not a part of the modeling pipeline; rather it  pulls in news headlines for the webpage, thus it can be 
+skipped at the cost of this secondary functionality (e.g. not needed for grading). If you want to sign up for a newsAPI key, 
+please go to the following page and follow the instructions: https://newsapi.org/register. You will be able to access 
+the API key at the end of the registration process. Next, open the __news_api_env__ file in the  project root directory 
+and enter your key where indicated. Do not add a space after the "=".
 
 ##### Docker Image: 
 Build the docker image with the following command (place a name of your choosing that replaces "<image_name>")
 ```
-docker run --mount type=bind,source="$(pwd)"/data,target=/src/data -mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=news_api_env <image_name> run_main_pipeline.sh
+docker build -f="DockerfileBash" -t <image_name> .
 ```
-Run the model pipeline with the command below, again replacing "<image_name>":
+Run the model training pipeline with the command below, again replacing "<image_name>":
 ```
-docker run --mount type=bind,source="$(pwd)"/data,target=/src/data -mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=news_api_env <image_name> run_main_pipeline.sh
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --env-file=aws_creds <image_name> run_model_pipeline.sh
 ```
 
-To run the app view the appropriate section in this readMe (section 3). 
+Run the model execution (forecasting) and file generation (for webapp) pipeline using the command below, again replacing "<image_name>".
+If you have a newsAPI key and added it to the environment file, add the argument --env-file=news_api_env to command as well.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static <image_name> run_forecast_appfiles_pipeline.sh
+```
+To run the webapp view the appropriate section in this readMe (section 3). Note since --env-file=rds_config is not issued
+in the above statement, please use the local database pointed command in section 3 for using the app. If you want to grade
+RDS please add --env-file to the above command and then run the RDS pointed command in section 3. 
 
-## Running the Program End to End Detailed Instructions
+## Running the Program End to End
+In this section, the steps to run the program from end to end are discussed. These means from the initial API call for data
+all the way through having everything ready to launch the webapp
 
 ### 1. Configuration and Environment Variable Set-up for Main Pipeline
 Depending on how you decide to run the pipeline there can be quite a few different environment variables that need to be
@@ -439,14 +455,18 @@ Issue the following command from the project repo root directory to the build th
 docker build -f="DockerfileApp" -t <image_name> .
 ```
 To boot the app, run the command below if you are working with a local database. You _need_ to replace "<image_name" with
-the image name you chose in the command above.
+the image name you chose in the command above. You can set your own SQLALCHEMY_DATABASE_URI and the flaskconfig.py
+file will locate it based on an os.get. If you choose to do this, note that you need to re-run the model exeuction pipeline
+and before you do change the SQLALCHEMY_DATABASE_URI in the config.py file to match.
+
 ```angular2
 docker run -p 5000:5000 <image_name>
 ```
-or if you are working with an RDS database then issue:
+If you are working with an RDS database then issue:
 ```angular2
 docker run --env-file=rds_config -p 5000:5000 msia423-covid19-app
 ```
+
 To access the application:
 * MAC/Linux users go to: http://0.0.0.0:5000/
 * Windows users go to: http://localhost:5000/

@@ -193,6 +193,8 @@ def run_data_preparation(args):
     global_df = get_global_daily(df)
     helper.add_to_database(country_df,"country_covid_daily_cases",'replace',args.engine_string)
     helper.add_to_database(global_df, "global_covid_daily_cases",'replace', args.engine_string)
+    country_df.to_csv('data/country_data.csv')
+    global_df.to_csv('data/global_data.csv')
 
     logger.info("data_preparation.py was run successfully.")
 

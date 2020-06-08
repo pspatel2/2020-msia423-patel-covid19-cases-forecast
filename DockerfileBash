@@ -16,8 +16,10 @@ RUN pip3 install -r requirements.txt
 
 COPY . /src
 
-RUN dos2unix run_main_pipeline.sh && apt-get --purge remove -y dos2unix
+RUN dos2unix run_model_pipeline.sh
+RUN chmod +x run_model_pipeline.sh
 
-RUN chmod +x run_main_pipeline.sh
+RUN dos2unix run_forecast_appfiles_pipeline.sh && apt-get --purge remove -y dos2unix
+RUN chmod +x run_forecast_appfiles_pipeline.sh
 
 ENTRYPOINT ["sh"]

@@ -9,7 +9,7 @@ import botocore.exceptions as botoexceptions
 import logging.config
 import os
 import ast
-import config
+import config as cfg
 
 logging.config.fileConfig(fname="local.conf")
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def acquire_data(url,params):
     # convert string rep of dict to dict for params
     params = ast.literal_eval(params)
     # get apiKey from environment variable
-    params['apiKey'] = config.NEWS_API_KEY
+    params['apiKey'] = cfg.NEWS_API_KEY
     try:
         response = requests.get(url, params=params)
     except requests.exceptions.ConnectionError:
@@ -55,7 +55,7 @@ def acquire_data(url,params):
     try:
         api_pull = api_response['articles']
     except KeyError:
-        logger.error("It is likely you have not set your API key--please see the readme for instructions on this")
+        logger.error("It is likely you have not set your newsAPI key--please see the readme for instructions on this")
 
     return api_pull
 
@@ -129,14 +129,21 @@ def run_get_news(args):
     except IOError:
         logger.error("Could not read in the config file--verify correct filename/path.")
 
-    # call function to get data
-    api_data = acquire_data(**config['get_news']['acquire_data'])
+    # skip function entirely if newsAPI key is not set b/c we dont want the pipeline to throw an error just cause
+    # of missing a secondary function
+    if cfg.NEWS_API_KEY is not None:
+        # call function to get data
+        api_data = acquire_data(**config['get_news']['acquire_data'])
 
-    # call function to write data to s3
-    if args.s3_flag == True:
-        write_data_to_s3(api_data, **config['get_news']['write_data_to_s3'])
+        # call function to write data to s3
+        if args.s3_flag == True:
+            write_data_to_s3(api_data, **config['get_news']['write_data_to_s3'])
+        else:
+            write_data_to_local(api_data,**config['get_news']['write_data_to_local'])
+
     else:
-        write_data_to_local(api_data,**config['get_news']['write_data_to_local'])
+        logger.warning("No newsAPI key found--the get_news.py is skipped and the news headline functionality wont show"
+                       "up on the app ")
 
 # call function if it is explicitly called rather than if it is imported (for whatever reason)
 if __name__ == '__main__':

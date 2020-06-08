@@ -15,8 +15,11 @@ DB_USER = os.environ.get('MYSQL_USER')
 DB_PW = os.environ.get('MYSQL_PASSWORD')
 DATABASE_NAME = os.environ.get("MYSQL_DATABASE")
 DB_DIALECT = 'mysql+pymysql'
+SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
 
-if DB_HOST is None:
+if SQLALCHEMY_DATABASE_URI is not None:
+    pass
+elif DB_HOST is None:
     SQLALCHEMY_DATABASE_URI = 'sqlite:///data/msia423_covid19_db.db'
 else:
     SQLALCHEMY_DATABASE_URI = '{dialect}://{user}:{pw}@{host}:{port}/{db}'.format(dialect=DB_DIALECT, user=DB_USER,
