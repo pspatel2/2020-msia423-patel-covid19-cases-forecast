@@ -231,7 +231,7 @@ the API key at the end of the registration process. Next, open the __news_api_en
 and enter your key where indicated. Do not add a space after the "=".
 
 ##### Docker Image: 
-Build the docker image with the following command (place a name of your choosing that replaces "<image_name>")
+Build the docker image for the model training pipeline with the following command (place a name of your choosing that replaces "<image_name>")
 ```
 docker build -f="DockerfileBash" -t <image_name> .
 ```
@@ -239,6 +239,11 @@ Run the model training pipeline with the command below, again replacing "<image_
 ```
 docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY <image_name> run_model_pipeline.sh
 ```
+The following artifacts should be present in your local directories after you've ran this:
+-> data\global_data.csv
+-> data\country_data.csv
+-> models\global\ARIMA_global_model (global TMO)
+-> models\country\* (TMO per country)
 
 To run the app, first build the docker image using the command below, replacing "<image_name>":
 ```angular2
