@@ -216,19 +216,12 @@ This approach will not run many of the scripts that pertain to creating new elem
  statement that will be detailed. OR you can follow the end-to-end instructions in the section following this one.
 
 Instructions in the next section detail all the configurations that can be changed and the optionality of running the model
-pipeline and the app. This section focuses on running with all defaults and use the shortest path to have the app running 
-on your local instance. In particular, the quick start uses s3 for data acquisition but runs everything else locally
-including the database.
+pipeline and the app. This section focuses on running with all defaults and use the shortest path to have the requirements
+fulfilled for course grading.
 
 ##### Environment Variables: 
 You will __need__ to set environment variables for accessing s3. They will be called using the -e command and the variable names
 that will be searched for are: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
-
-The newsAPI is not a part of the modeling pipeline; rather it  pulls in news headlines for the webpage, thus it can be 
-skipped at the cost of this secondary functionality (e.g. not needed for grading). If you want to sign up for a newsAPI key, 
-please go to the following page and follow the instructions: https://newsapi.org/register. You will be able to access 
-the API key at the end of the registration process. Next, open the __news_api_env__ file in the  project root directory 
-and enter your key where indicated. Do not add a space after the "=".
 
 ##### Docker Image: 
 Build the docker image for the model training pipeline with the following command (place a name of your choosing that replaces "<image_name>")
@@ -240,10 +233,10 @@ Run the model training pipeline with the command below, again replacing "<image_
 docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY <image_name> run_model_pipeline.sh
 ```
 The following artifacts should be present in your local directories after you've ran this:
--> data\global_data.csv
--> data\country_data.csv
--> models\global\ARIMA_global_model (global TMO)
--> models\country\* (TMO per country)
+* data\global_data.csv
+* data\country_data.csv
+* models\global\ARIMA_global_model (global TMO)
+* models\country\* (TMO per country)
 
 To run the app, first build the docker image using the command below, replacing "<image_name>":
 ```angular2
@@ -261,6 +254,12 @@ You can follow the end-to-end instructions in the next section following route 1
 
 First open the run_model_pipeline.sh file and uncomment line 4. Then re-build the docker image and re-run the training pipeline
 command. No API key is needed to pull new data.
+
+The newsAPI is not a part of the modeling pipeline; rather it  pulls in news headlines for the webpage, thus it can be 
+skipped at the cost of this secondary functionality (e.g. not needed for grading). If you want to sign up for a newsAPI key, 
+please go to the following page and follow the instructions: https://newsapi.org/register. You will be able to access 
+the API key at the end of the registration process. Next, open the __news_api_env__ file in the  project root directory 
+and enter your key where indicated. Do not add a space after the "=".
 
 Then run the model execution (forecasting) and file generation (for webapp) pipeline using the command below, again replacing "<image_name>".
 If you have a newsAPI key and added it to the environment file, add the argument --env-file=news_api_env to command as well.
