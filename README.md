@@ -164,9 +164,9 @@ __Sprint Sizing Legend:__
 │   ├── templates/                    <- HTML (or other code) that is templated and changes based on a set of inputs
 │   ├── Dockerfile                    <- Dockerfile for building image to run app  
 │
-├── config                            <- Directory for configuration files 
-│   ├── local/                        <- Directory for keeping environment variables and other local configurations that *do not sync** to Github 
+├── config                            <- Directory for configuration files  
 │   ├── logging/                      <- Configuration of python loggers
+│   ├── config.yml/                   <- YAML configuration file containing configuration options for model pipeline
 │   ├── flaskconfig.py                <- Configurations for Flask API 
 │
 ├── data                              <- Folder that contains data used or generated. Only the external/ and sample/ subdirectories are tracked by git. 
@@ -182,29 +182,43 @@ __Sprint Sizing Legend:__
 ├── models/                           <- Trained model objects (TMOs), model predictions, and/or model summaries
 │
 ├── notebooks/
-│   ├── archive/                      <- Develop notebooks no longer being used.
-│   ├── deliver/                      <- Notebooks shared with others / in final state
-│   ├── develop/                      <- Current notebooks being used in development.
+│   ├── archive/                                                           <- Develop notebooks no longer being used.
+│   ├── deliver/                                                           <- Notebooks shared with others / in final state
+│   ├── develop/                                                           <- Current notebooks being used in development.
 │       │
-│       ├──pull_and_save_cases_data.ipynb/                   <- Notebook used to test pulling COVID19 cases data
-│       ├──pull_news_headlines.ipynb/                        <- Notebook used to test pulling news headlines for covid19
-│       ├──covid19_eda.ipynb/                                <- Notebook used to explore and plot covid19 data
-│       ├──covid19_forecasting_model_development.ipynb/      <- Notebook used for time series model development (global)
+│       ├──pull_and_save_cases_data.ipynb/                                 <- Notebook used to test pulling COVID19 cases data
+│       ├──pull_news_headlines.ipynb/                                      <- Notebook used to test pulling news headlines for covid19
+│       ├──covid19_eda.ipynb/                                              <- Notebook used to explore and plot covid19 data
+│       ├──covid19_forecasting_model_development.ipynb/                    <- Notebook used for time series model development (global)
 │       ├──covid19_forecasting_model_development_country_level.ipynb/      <- Notebook used for time series model development (country)
-│       ├──covid19_forecasting_model_development.ipynb/      <- Notebook used for time series model development (global)
-│   ├── template.ipynb                <- Template notebook for analysis with useful imports, helper functions, and SQLAlchemy setup. 
+│       ├──covid19_forecasting_model_development.ipynb/                    <- Notebook used for time series model development (global)
+│   ├── template.ipynb                                                     <- Template notebook for analysis with useful imports, helper functions, and SQLAlchemy setup. 
 │
 ├── reference/                        <- Any reference material relevant to the project
 │
 ├── src/                              <- Source data for the project 
-│       ├──data_acquistion.ipynb/                            <- Script for pulling covid case data from API and writing to s3
-│       ├──create_database.ipynb/                            <- Script for creating either a SQLlite db or a RDS db
-│       ├──get_news.ipynb/                                   <- Script for getting BBC news headliens for covid-19
+│       ├──data_acquistion.py/          <- Script for pulling covid case data from API and writing to s3
+│       ├──create_database.py/          <- Script for creating either a SQLlite db or a RDS db
+│       ├──data_preparation.py/         <- manipulate data for generating plots and training models
+│       ├──generate_trend_plots.py/     <- generate trend plots for webapp
+│       ├──train_models.py/             <- train ARIMA models for confirmed covid cases both globally and by country
+│       ├──generate_forecasts.py/       <- generate forecast of confirmed covid cases both globally and by country
+│       ├──generate_forecast_plots.py/  <- generates forecast plots used for the webapp
+│       ├──helper.py/                   <- script that contains helper functions
+│       ├──test.py/                     <- Script for running unit tests
+│       ├──get_news.py/                 <- Script for getting BBC news headliens for covid-19
+│       ├──config.py/                   <- Script for configs in the pipeline--particularly things like env vars
 │
-├── test/                             <- Files necessary for running model tests (see documentation below) 
-│
-├── app.py                            <- Flask wrapper for running the model 
-├── requirements.txt                  <- Python package dependencies 
+├── app.py                               <- Flask wrapper for running the model 
+├── aws_creds                            <- environmental file template for s3 credentials
+├── rds_config                           <- environmental file template for RDS credentials
+├── requirements.txt                     <- Python package dependencies 
+├── run_model_pipeline.sh                <- shell script to run training model pipeline
+├── run_main_pipeline.sh                 <- shell script to run full end to end pipeline (acquisition through model exeuction) 
+├── run_forecast_appfiles_pipeline.sh    <- shell script to run forecasting and app artifact update leg
+├── unit.sh                              <- shell script to run unit tests
+├── DockerfileBash                       <- Python package dependencies 
+├── DockerfileApp                        <- Python package dependencies 
 ```
 
 ## Running the Program for MSiA 423 Grading Purposes
