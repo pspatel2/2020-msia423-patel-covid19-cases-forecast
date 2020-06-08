@@ -211,9 +211,11 @@ __Sprint Sizing Legend:__
 Note, in this section, instructions are written primarily for grading purposes for the MSiA423 course. Please realize the webapp forecast
 plots may look strange with a gap between the final observation point and the first forecasted point. The code was created such
 that its expected new data is pulled from the API each day so the forecasting date starts with tomorrow. However the model is 
-agnostic to date and just outputs forecast for the next n points, without a date. So when old data is ran the forecast is attributed
-to the wrong dates unless the data is from yesterday. If you want to remedy this, open the run_model_pipeline.sh and uncomment line 4.
-This will have the pipeline pull data from the API (requires no key) and save it to s3. The rest of the steps are unchanged.
+agnostic to date and just outputs forecast for the next n points, without a date. So when old data is ran, which is the 
+case here because the requirement was that the pipeline start with downloading data from s3 not acquiring data, the forecast is attributed
+to the wrong dates unless the data is from yesterday. __If you want to remedy this__ (with no added complexity), simply 
+open the run_model_pipeline.sh and uncomment line 4. This will have the pipeline pull data from the API (requires no key) 
+and save it to s3. The rest of the steps are unchanged.
 
 Instructions in the next section detail all the configurations that can be changed and the optionality of running the model
 pipeline and the app. This section focuses on running with all defaults and use the shortest path to have the app running 
