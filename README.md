@@ -435,7 +435,7 @@ docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=
 ```
 * For 1b (s3 data acq, all other local) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
 ```angular2
-docker run --mount type=bind,source="$(pwd)"/data,target=/src/data -mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=news_api_env <image_name> run_main_pipeline.sh
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=news_api_env <image_name> run_main_pipeline.sh
 ```
 * For 1c (1b and use RDS) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
 ```angular2

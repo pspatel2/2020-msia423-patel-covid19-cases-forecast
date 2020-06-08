@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-#genrate trend plots to display on webapp
-python3 src/generate_trend_plots.py --config=config/config.yml
-
 #get forecasts
 python3 src/generate_forecasts.py --config=config/config.yml
 
