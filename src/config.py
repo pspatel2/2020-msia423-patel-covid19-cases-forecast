@@ -15,9 +15,13 @@ password = os.environ.get("MYSQL_PASSWORD")
 host = os.environ.get("MYSQL_HOST")
 port = os.environ.get("MYSQL_PORT")
 DATABASE_NAME = os.environ.get("MYSQL_DATABASE")
-SQLALCHEMY_DATABASE_URI  = engine_string = "{}://{}:{}@{}:{}/{}".format(conn_type, user, password, host, port, DATABASE_NAME)
+SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
 
-if host is None:
+if SQLALCHEMY_DATABASE_URI is not None:
+    pass
+elif host is None:
     # FOR LOCAL
     DATABASE_PATH = os.path.join(PROJECT_HOME, 'data/msia423_covid19_db.db')
     SQLALCHEMY_DATABASE_URI = 'sqlite:////{}'.format(DATABASE_PATH)
+else:
+    SQLALCHEMY_DATABASE_URI = "{}://{}:{}@{}:{}/{}".format(conn_type, user, password, host, port, DATABASE_NAME)
