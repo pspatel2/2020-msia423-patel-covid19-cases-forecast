@@ -10,6 +10,8 @@ data_preparation:
     bucket_dir_path: "MSiA_423/data/covid_data/"
   get_local_data:
     input_file_path: "data/covid19_time_series.json"
+  global_data_out: 'data/global_data.csv'
+  country_data_out: 'data/country_data.csv'
 
 generate_trend_plots:
   save_html_to_s3:

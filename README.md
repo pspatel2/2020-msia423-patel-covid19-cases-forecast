@@ -238,6 +238,12 @@ You will __need__ to set environment variables for accessing s3. They will be ca
 that will be searched for are: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
 
 ##### Docker Image: 
+Prior to building the image, if you would like to change local pathing for where artifacts are written out, please navigate
+to the config directory and open the config.yml. You can change line 13 and 14 to change where the prepared data is written out.
+You can change lines 52 and 71 to change where the trained model objects are saved out. One consideration is, only certain
+locations are mounted to the docker image call below. If you want to change the above mentioned configs, you may want to 
+verify the correct directories/locations are mounted.
+
 Build the docker image for the model training pipeline with the following command (place a name of your choosing that replaces "<image_name>")
 ```
 docker build -f="DockerfileBash" -t <image_name> .
@@ -246,7 +252,7 @@ Run the model training pipeline with the command below, again replacing "<image_
 ```
 docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY <image_name> run_model_pipeline.sh
 ```
-The following artifacts should be present in your local directories after you've ran this:
+The following artifacts should be present in your local directories (if you have not changed paths) after you've ran this:
 * data\global_data.csv
 * data\country_data.csv
 * models\global\ARIMA_global_model (global TMO)
@@ -401,8 +407,8 @@ in s3 and organizing outputs. Namely there are some potential changes to be made
 Please go to the Environment Variables section of part 1c. These directions apply equivalently here.
 ##### Configuration Options:
 This scenario is almost identical to part 1c. The only difference is that you will need to update the config.yml file a little more.
-Namely, you __must__ change the value associated with all instances (lines 3,9,16,26,47,66,75,82,87,92) of the key __s3_bucket_name__ to correspond to your s3 bucket.
-Similarly you can change (you don't have to though) any bucket directory path reference (lines 4,10,17,27,48,67,76,83,88,93) in the config.yml file--be careful to verify consistency. E.g.
+Namely, you __must__ change the value associated with all instances (lines 3,9,18,28,49,68,77,84,89,94) of the key __s3_bucket_name__ to correspond to your s3 bucket.
+Similarly you can change (you don't have to though) any bucket directory path reference (lines 4,10,19,29,50,69,78,85,90,95) in the config.yml file--be careful to verify consistency. E.g.
 if you change an output path, it might be the input path for a downstream function. For any other configuration choices you
 can refer to the applicable section in part 1c.
 
