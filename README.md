@@ -235,7 +235,7 @@ Build the docker image with the following command (place a name of your choosing
 ```
 docker build -f="DockerfileBash" -t <image_name> .
 ```
-Run the model training pipeline with the command below, again replacing "<image_name>":
+Run the model training pipeline with the command below, again replacing "<image_name>".
 ```
 docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY <image_name> run_model_pipeline.sh
 ```
@@ -252,6 +252,7 @@ To view the app in browser and/or for more details on configurations, view secti
 
 
 __THESE ARE THE STEPS TO GENERATE NEW DATA, FORECASTS, AND ARTIFACTS FOR THE WEBPAGE__:
+You can follow the end-to-end instructions in the next section following route 1c or you can follow the instructions below.
 
 First open the run_model_pipeline.sh file and uncomment line 4. Then re-build the docker image and re-run the training pipeline
 command. No API key is needed to pull new data.
