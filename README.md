@@ -242,7 +242,9 @@ To run the app, first build the docker image using the command below, replacing 
 ```angular2
 docker build -f="DockerfileApp" -t <image_name> .
 ```
-Next issue the command, replacing "<image_name>":
+Next issue the command, replacing "<image_name>". If you choose not use the rds_config file approach to set the environment variables,
+you can provide an SQL_URI directly by sourcing an env var called SQLALCHEMY_DATABASE_URI on your machine and replacing 
+the --env-file command below with -e SQLALCHEMY_DATABASE_URI.
 ```angular2
 docker run --env-file=rds_config -p 5000:5000 <image_name>
 ```
@@ -264,7 +266,7 @@ and enter your key where indicated. Do not add a space after the "=".
 Then run the model execution (forecasting) and file generation (for webapp) pipeline using the command below, again replacing "<image_name>".
 If you have a newsAPI key and added it to the environment file, add the argument --env-file=news_api_env to command as well.
 ```angular2
-docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static <image_name> run_forecast_appfiles_pipeline.sh
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=rds_config <image_name> run_forecast_appfiles_pipeline.sh
 ```
 To run the app, first build the docker image using the command below, replacing "<image_name>":
 ```angular2
@@ -272,7 +274,7 @@ docker build -f="DockerfileApp" -t <image_name> .
 ```
 Next issue the command, replacing "<image_name>":
 ```angular2
-docker run -p 5000:5000 <image_name>
+docker run --env-file=rds_config -p 5000:5000 <image_name>
 ```
 To view the app in browser and/or for more details on configurations, view section 3 of this report that contains more details.
 
@@ -496,6 +498,9 @@ docker run --env-file=rds_config -p 5000:5000 <image_name>
 To access the application:
 * MAC/Linux users go to: http://0.0.0.0:5000/
 * Windows users go to: http://localhost:5000/
+
+There are other configurations you can change in the flaskconfig.py file, but it is suggested to keep these as is for the 
+most part.
 
 ### 4. Code Unit Testing
 If you would like to run the unit testing script, first verify that you have built a docker image with bash as an entrypoint.
