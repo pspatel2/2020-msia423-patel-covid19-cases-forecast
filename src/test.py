@@ -199,7 +199,7 @@ def test_train_global_model():
     Test the train_global_model function in the train_models.py function
     """
     #happy path: read in some sample data from the repo, run the function and assert the returned model is of the correct type
-    global_df = pd.read_csv('sample_global_daily_data.csv')
+    global_df = pd.read_csv('sample_global_daily_data.csv', index_col=None)
     global_df_series = tm.reduce_and_reshape_data('global', global_df)
     model_params = {'p':1,'d':1,'q':0}
     model = tm.train_global_model(global_df_series,model_params,{'solver':'lbfgs'})
@@ -216,7 +216,7 @@ def test_forward_chaining_eval_global_model():
     Test the forward_chaining_eval_global_model function in the train_models.py function
     """
     #happy path: read in some sample data from the repo, run the function and assert the return value (MAPE) is of float type
-    global_df = pd.read_csv('sample_global_daily_data.csv')
+    global_df = pd.read_csv('sample_global_daily_data.csv', index_col=None)
     global_df_series = tm.reduce_and_reshape_data('global', global_df)
     model_params = {'p':1,'d':1,'q':0}
     optional_fit_args = {'solver':'lbfgs'}
@@ -234,7 +234,7 @@ def test_save_global_model_local():
     Test the save_global_model_local function in the train_models.py function
     """
     #happy path: read in some sample data from the repo, run the function and assert the returned model is of the correct type
-    global_df = pd.read_csv('sample_global_daily_data.csv')
+    global_df = pd.read_csv('sample_global_daily_data.csv', index_col=None)
     global_df_series = tm.reduce_and_reshape_data('global', global_df)
     model_params = {'p':1,'d':1,'q':0}
     model = tm.train_global_model(global_df_series,model_params,{'solver':'lbfgs'})
@@ -255,14 +255,14 @@ def test_train_country_models():
     """
     #happy path: read in sample data from repo, run the function, assert length of output (dataframe) is 1 as there
     # is only one country in the sample data
-    country_df = pd.read_csv('sample_country_daily_data.csv')
+    country_df = pd.read_csv('sample_country_daily_data.csv', index_col=None)
     model_params = {'p': 1, 'd': 1, 'q': 0}
     models_df = tm.train_country_models(country_df, model_params, {'solver': 'lbfgs'})
     assert(len(models_df)==1)
     logger.info("train_models function train_country_models happy path unit test is successful")
 
     #unhappy path: feed in the wrong (global instead of country) data to the function; should raise an AttributeError
-    global_df = pd.read_csv('sample_global_daily_data.csv')
+    global_df = pd.read_csv('sample_global_daily_data.csv', index_col=None)
     model_params = {'p': 1, 'd': 1, 'q': 0}
     with pytest.raises(AttributeError):
         models_df = tm.train_country_models(global_df, model_params, {'solver': 'lbfgs'})
@@ -274,7 +274,7 @@ def test_get_model():
     """
     #only test local path (not s3)
     #happy path: read sample data, train model, save it, run get_model and assert the object it gets is of the right type
-    global_df = pd.read_csv('sample_global_daily_data.csv')
+    global_df = pd.read_csv('sample_global_daily_data.csv', index_col=None)
     global_df_series = tm.reduce_and_reshape_data('global', global_df)
     model_params = {'p': 1, 'd': 1, 'q': 0}
     model = tm.train_global_model(global_df_series, model_params, {'solver': 'lbfgs'})
@@ -295,7 +295,7 @@ def test_get_global_forecast():
     """
     # happy path: read sample data, train a model, call the forecast function and assert the output is the same length
     # as the number of days to forecast arg input
-    global_df = pd.read_csv('sample_global_daily_data.csv')
+    global_df = pd.read_csv('sample_global_daily_data.csv', index_col=None)
     global_df_series = tm.reduce_and_reshape_data('global', global_df)
     model_params = {'p': 1, 'd': 1, 'q': 0}
     model = tm.train_global_model(global_df_series, model_params, {'solver': 'lbfgs'})
@@ -315,7 +315,7 @@ def test_get_country_forecast():
     """
     # happy path: read sample data, train a model, call the forecast function and assert the output is the same length
     # as the number of days to forecast arg input
-    country_df = pd.read_csv('sample_country_daily_data.csv')
+    country_df = pd.read_csv('sample_country_daily_data.csv', index_col=None)
     country = country_df.Country.unique()[0]
     model_params = {'p': 1, 'd': 1, 'q': 0}
     models_df = tm.train_country_models(country_df, model_params, {'solver': 'lbfgs'})
