@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Acquire new data from API
-#python3 src/data_acquistion.py --config=config/config.yml
+#python3 src/data_acquistion.py --config=config/config.yml --s3
 
 # Create database (RDS or Local)
 python3 src/create_database.py 
