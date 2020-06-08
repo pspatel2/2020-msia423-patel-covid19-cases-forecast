@@ -208,14 +208,12 @@ __Sprint Sizing Legend:__
 ```
 
 ## Running the Program for MSiA 423 Grading Purposes
-Note, in this section, instructions are written primarily for grading purposes for the MSiA423 course. Please realize the webapp forecast
-plots may look strange with a gap between the final observation point and the first forecasted point. The code was created such
-that its expected new data is pulled from the API each day so the forecasting date starts with tomorrow. However the model is 
-agnostic to date and just outputs forecast for the next n points, without a date. So when old data is ran, which is the 
-case here because the requirement was that the pipeline start with downloading data from s3 not acquiring data, the forecast is attributed
-to the wrong dates unless the data is from yesterday. __If you want to remedy this__ (with no added complexity), simply 
-open the run_model_pipeline.sh and uncomment line 4. This will have the pipeline pull data from the API (requires no key) 
-and save it to s3. The rest of the steps are unchanged.
+Note, in this section, instructions are written primarily for grading purposes for the MSiA423 course. Please realize these
+instructions will not run the pipeline in its entirety (because of the requested fields in the submission form). 
+It runs on old data for the training pipeline and the items displayed on the webpage will be outdated as well. 
+This approach will not run many of the scripts that pertain to creating new elements for the webpage and making new forecasts. 
+ __If you want the full pipeline__ you can still follow these directions but you will need to run an additional docker run
+ statement that will be detailed. OR you can follow the end-to-end instructions in the section following this one.
 
 Instructions in the next section detail all the configurations that can be changed and the optionality of running the model
 pipeline and the app. This section focuses on running with all defaults and use the shortest path to have the app running 
@@ -223,10 +221,8 @@ on your local instance. In particular, the quick start uses s3 for data acquisit
 including the database.
 
 ##### Environment Variables: 
-You will __need__ to set environment variables for accessing s3. If you already are aware of the process to set these
-please do so in the manner of your choosing. Otherwise, in the root directory of the repo, there is a file called __aws_creds__. 
-Please open this file and enter the information within the file that is associated with your s3 account. Do not use 
-quotation marks or include any spaces in the file. Save this file and close it. 
+You will __need__ to set environment variables for accessing s3. They will be called using the -e command and the variable names
+that will be searched for are: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
 
 The newsAPI is not a part of the modeling pipeline; rather it  pulls in news headlines for the webpage, thus it can be 
 skipped at the cost of this secondary functionality (e.g. not needed for grading). If you want to sign up for a newsAPI key, 
@@ -241,17 +237,39 @@ docker build -f="DockerfileBash" -t <image_name> .
 ```
 Run the model training pipeline with the command below, again replacing "<image_name>":
 ```
-docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --env-file=aws_creds <image_name> run_model_pipeline.sh
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY <image_name> run_model_pipeline.sh
 ```
 
-Run the model execution (forecasting) and file generation (for webapp) pipeline using the command below, again replacing "<image_name>".
+To run the app, first build the docker image using the command below, replacing "<image_name>":
+```angular2
+docker build -f="DockerfileApp" -t <image_name> .
+```
+Next issue the command, replacing "<image_name>":
+```angular2
+docker run --env-file=rds_config -p 5000:5000 <image_name>
+```
+To view the app in browser and/or for more details on configurations, view section 3 of this report that contains more details.
+
+
+__THESE ARE THE STEPS TO GENERATE NEW DATA, FORECASTS, AND ARTIFACTS FOR THE WEBPAGE__:
+
+First open the run_model_pipeline.sh file and uncomment line 4. Then re-build the docker image and re-run the training pipeline
+command. No API key is needed to pull new data.
+
+Then run the model execution (forecasting) and file generation (for webapp) pipeline using the command below, again replacing "<image_name>".
 If you have a newsAPI key and added it to the environment file, add the argument --env-file=news_api_env to command as well.
 ```angular2
 docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static <image_name> run_forecast_appfiles_pipeline.sh
 ```
-To run the webapp view the appropriate section in this readMe (section 3). Note since --env-file=rds_config is not issued
-in the above statement, please use the local database pointed command in section 3 for using the app. If you want to grade
-RDS please add --env-file to the above command and then run the RDS pointed command in section 3. 
+To run the app, first build the docker image using the command below, replacing "<image_name>":
+```angular2
+docker build -f="DockerfileApp" -t <image_name> .
+```
+Next issue the command, replacing "<image_name>":
+```angular2
+docker run -p 5000:5000 <image_name>
+```
+To view the app in browser and/or for more details on configurations, view section 3 of this report that contains more details.
 
 ## Running the Program End to End
 In this section, the steps to run the program from end to end are discussed. These means from the initial API call for data
