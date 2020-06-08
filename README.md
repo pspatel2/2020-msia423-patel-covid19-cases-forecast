@@ -467,7 +467,7 @@ docker run -p 5000:5000 <image_name>
 ```
 If you are working with an RDS database then issue:
 ```angular2
-docker run --env-file=rds_config -p 5000:5000 msia423-covid19-app
+docker run --env-file=rds_config -p 5000:5000 <image_name>
 ```
 
 To access the application:
