@@ -14,20 +14,28 @@ __QA__: [Greesham Simon](https://github.com/greeshamsimon)
     * [Backlog](#backlog)
     * [Icebox](#icebox)
 - [Directory structure](#directory-structure)
-- [Running the app](#running-the-app)
-  * [1. Initialize the database](#1-initialize-the-database)
-    + [Create the database with a single song](#create-the-database-with-a-single-song)
-    + [Adding additional songs](#adding-additional-songs)
-    + [Defining your engine string](#defining-your-engine-string)
-      - [Local SQLite database](#local-sqlite-database)
-  * [2. Configure Flask app](#2-configure-flask-app)
-  * [3. Run the Flask app](#3-run-the-flask-app)
-- [Running the app in Docker](#running-the-app-in-docker)
-  * [1. Build the image](#1-build-the-image)
-  * [2. Run the container](#2-run-the-container)
-  * [3. Kill the container](#3-kill-the-container)
-  * [Workaround for potential Docker problem for Windows.](#workaround-for-potential-docker-problem-for-windows)
-
+- [Running the Program for MSiA 423 Grading Purposes](#running-the-program-for-msia-423-grading-purposes)
+- [Running the Program End to End](#running-the-program-end-to-end)
+  * [1. Configuration and Environment Variable Set-up for Main Pipeline](#1-configuration-and-environment-variable-set-up-for-main-pipeline)
+    + [1a. Set-up for Running Program Completely Locally](#1a-set-up-for-running-the-complete-program-fully-local) 
+        + [Environment Variables](#environment-variables) 
+        + [Configuration Options](#configuration-options)
+    + [1b. Set-up for Running Program Completely Locally Aside from Data Acquisition in s3](#1b-set-up-for-running-program-completely-locally-aside-from-data-acquisition-in-s3) 
+        + [Environment Variables](#environment-variables) 
+        + [Configuration Options](#configuration-options)
+    + [1c. Set-up for Running Program With Data Acq in s3, Database in RDS, All Else Local (DEFAULT)](#1c-default-set-up-for-running-program-with-data-acq-in-s3-database-in-rds-all-else-local) 
+        + [Environment Variables](#environment-variables) 
+        + [Configuration Options](#configuration-options)
+    + [1d. Set-up for Running Program Fully in S3 and RDS](#1d-set-up-for-running-program-fully-in-s3-and-rds) 
+        + [Environment Variables](#environment-variables) 
+        + [Configuration Options](#configuration-options)
+  * [2. Run the Data Acquisition and Modeling Pipeline](#2-run-the-data-acquisition-and-modeling-pipeline)
+    + [Building the Docker Image](#build-the-docker-image) 
+    + [Run-time Options](#run-time-options)
+    + [Running the Pipeline](#running-the-pipeline)
+    + [Verifying a Sucessful Run](#verifying-a-successful-run)
+  * [3. Run the Web Application](#3-run-the-web-application)
+  * [4. Code Unit Testing](#4-code-unit-testing)
 <!-- tocstop -->
 
 ## Project Charter
@@ -145,16 +153,15 @@ __Sprint Sizing Legend:__
 4.	Initiative2.Epic3: Descriptive Analyses
 5.	Initiative2.Epic4.Story4: Send link to beta testers (1pts)
 6.	Initiative2.Epic4.Story5: Update UI Based on Feedback(8pts)
-6.	Initiative2.Epic4.Story6: Update UI Based on Feedback(4pts)
+7.	Initiative2.Epic4.Story6: Update UI Based on Feedback(4pts)
 
 ## Directory structure 
 
 ```
 ├── README.md                         <- You are here
-├── api
+├── app
 │   ├── static/                       <- CSS, JS files that remain static
 │   ├── templates/                    <- HTML (or other code) that is templated and changes based on a set of inputs
-│   ├── boot.sh                       <- Start up script for launching app in Docker container.
 │   ├── Dockerfile                    <- Dockerfile for building image to run app  
 │
 ├── config                            <- Directory for configuration files 
@@ -178,132 +185,302 @@ __Sprint Sizing Legend:__
 │   ├── archive/                      <- Develop notebooks no longer being used.
 │   ├── deliver/                      <- Notebooks shared with others / in final state
 │   ├── develop/                      <- Current notebooks being used in development.
+│       │
+│       ├──pull_and_save_cases_data.ipynb/                   <- Notebook used to test pulling COVID19 cases data
+│       ├──pull_news_headlines.ipynb/                        <- Notebook used to test pulling news headlines for covid19
+│       ├──covid19_eda.ipynb/                                <- Notebook used to explore and plot covid19 data
+│       ├──covid19_forecasting_model_development.ipynb/      <- Notebook used for time series model development (global)
+│       ├──covid19_forecasting_model_development_country_level.ipynb/      <- Notebook used for time series model development (country)
+│       ├──covid19_forecasting_model_development.ipynb/      <- Notebook used for time series model development (global)
 │   ├── template.ipynb                <- Template notebook for analysis with useful imports, helper functions, and SQLAlchemy setup. 
 │
 ├── reference/                        <- Any reference material relevant to the project
 │
 ├── src/                              <- Source data for the project 
+│       ├──data_acquistion.ipynb/                            <- Script for pulling covid case data from API and writing to s3
+│       ├──create_database.ipynb/                            <- Script for creating either a SQLlite db or a RDS db
+│       ├──get_news.ipynb/                                   <- Script for getting BBC news headliens for covid-19
 │
 ├── test/                             <- Files necessary for running model tests (see documentation below) 
 │
 ├── app.py                            <- Flask wrapper for running the model 
-├── run.py                            <- Simplifies the execution of one or more of the src scripts  
 ├── requirements.txt                  <- Python package dependencies 
 ```
 
-## Running the app
-### 1. Initialize the database 
+## Running the Program for MSiA 423 Grading Purposes
+Note, in this section, instructions are written primarily for grading purposes for the MSiA423 course. Please realize the webapp forecast
+plots may look strange with a gap between the final observation point and the first forecasted point. The code was created such
+that its expected new data is pulled from the API each day so the forecasting date starts with tomorrow. However the model is 
+agnostic to date and just outputs forecast for the next n points, without a date. So when old data is ran, which is the 
+case here because the requirement was that the pipeline start with downloading data from s3 not acquiring data, the forecast is attributed
+to the wrong dates unless the data is from yesterday. __If you want to remedy this__ (with no added complexity), simply 
+open the run_model_pipeline.sh and uncomment line 4. This will have the pipeline pull data from the API (requires no key) 
+and save it to s3. The rest of the steps are unchanged.
 
-#### Create the database with a single song 
-To create the database in the location configured in `config.py` with one initial song, run: 
+Instructions in the next section detail all the configurations that can be changed and the optionality of running the model
+pipeline and the app. This section focuses on running with all defaults and use the shortest path to have the app running 
+on your local instance. In particular, the quick start uses s3 for data acquisition but runs everything else locally
+including the database.
 
-`python run.py create_db --engine_string=<engine_string> --artist=<ARTIST> --title=<TITLE> --album=<ALBUM>`
+##### Environment Variables: 
+You will __need__ to set environment variables for accessing s3. If you already are aware of the process to set these
+please do so in the manner of your choosing. Otherwise, in the root directory of the repo, there is a file called __aws_creds__. 
+Please open this file and enter the information within the file that is associated with your s3 account. Do not use 
+quotation marks or include any spaces in the file. Save this file and close it. 
 
-By default, `python run.py create_db` creates a database at `sqlite:///data/tracks.db` with the initial song *Radar* by Britney spears. 
-#### Adding additional songs 
-To add an additional song:
+The newsAPI is not a part of the modeling pipeline; rather it  pulls in news headlines for the webpage, thus it can be 
+skipped at the cost of this secondary functionality (e.g. not needed for grading). If you want to sign up for a newsAPI key, 
+please go to the following page and follow the instructions: https://newsapi.org/register. You will be able to access 
+the API key at the end of the registration process. Next, open the __news_api_env__ file in the  project root directory 
+and enter your key where indicated. Do not add a space after the "=".
 
-`python run.py ingest --engine_string=<engine_string> --artist=<ARTIST> --title=<TITLE> --album=<ALBUM>`
-
-By default, `python run.py ingest` adds *Minor Cause* by Emancipator to the SQLite database located in `sqlite:///data/tracks.db`.
-
-#### Defining your engine string 
-A SQLAlchemy database connection is defined by a string with the following format:
-
-`dialect+driver://username:password@host:port/database`
-
-The `+dialect` is optional and if not provided, a default is used. For a more detailed description of what `dialect` and `driver` are and how a connection is made, you can see the documentation [here](https://docs.sqlalchemy.org/en/13/core/engines.html). We will cover SQLAlchemy and connection strings in the SQLAlchemy lab session on 
-##### Local SQLite database 
-
-A local SQLite database can be created for development and local testing. It does not require a username or password and replaces the host and port with the path to the database file: 
-
-```python
-engine_string='sqlite:///data/tracks.db'
-
+##### Docker Image: 
+Build the docker image with the following command (place a name of your choosing that replaces "<image_name>")
+```
+docker build -f="DockerfileBash" -t <image_name> .
+```
+Run the model training pipeline with the command below, again replacing "<image_name>":
+```
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --env-file=aws_creds <image_name> run_model_pipeline.sh
 ```
 
-The three `///` denote that it is a relative path to where the code is being run (which is from the root of this directory).
+Run the model execution (forecasting) and file generation (for webapp) pipeline using the command below, again replacing "<image_name>".
+If you have a newsAPI key and added it to the environment file, add the argument --env-file=news_api_env to command as well.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static <image_name> run_forecast_appfiles_pipeline.sh
+```
+To run the webapp view the appropriate section in this readMe (section 3). Note since --env-file=rds_config is not issued
+in the above statement, please use the local database pointed command in section 3 for using the app. If you want to grade
+RDS please add --env-file to the above command and then run the RDS pointed command in section 3. 
 
-You can also define the absolute path with four `////`, for example:
+## Running the Program End to End
+In this section, the steps to run the program from end to end are discussed. These means from the initial API call for data
+all the way through having everything ready to launch the webapp
 
-```python
-engine_string = 'sqlite://///Users/cmawer/Repos/2020-MSIA423-template-repository/data/tracks.db'
+### 1. Configuration and Environment Variable Set-up for Main Pipeline
+Depending on how you decide to run the pipeline there can be quite a few different environment variables that need to be
+set and passed to the Docker container. In this section, the necessary configurations for each approach will be specified.
+
+#### 1a. Set-up for Running the Complete Program Fully Local 
+In this scenario, the execution pipeline along with the app will run completely on your local machine. 
+
+##### Environment Variables: 
+In this case there is only one 'required' environment variable, which is an API key for the newsAPI. 
+However, the newsAPI is not a part of the modeling pipeline, it just pulls in news headlines for the webpage, thus it can
+also be skipped at the cost of this secondary functionality. To sign up for a newsAPI key, please go to the following page
+and follow the instructions: https://newsapi.org/register. You will be able to access the API key at the end of the 
+registration process. Next, open the __news_api_env__ file in the project root directory and enter your key where indicated.
+Do not add a space after the "=".
+
+##### Configuration Options:
+In this scenario, there are no configurations that must be changed for a successful run, however there are many options
+you can adjust. The configurations that are the most common to change are discussed below.
+__config.py__: Navigate to the src folder and open the config.py file. 
+* In here you can change the "DATABASE_PATH" configuration to choose
+the name of the local database. Caution, if you change the path from "data/", you will need to adjust the docker mounts
+downstream to make sure the database saves out locally.
+* You can also adjust line 8 in this file if you have decided to source your newsAPI key under some other variable name.
+__config.yml__: Navigate to the config folder from the project root directory and open the config.yml file. The file is 
+laid out such that each script has its own configuration blocks and within that block each function in the script has its 
+own block. So you can intuitively locate the configurations you might want to change. With this layout, it is important 
+to recognize the output of one script is potentially the input of another, thus if you change output pathing, please look
+downstream to adjust the same path being taken in as an input downstream. An example is:  
+* Under "data_acquisition", you can adjust the "local_filepath_out" to choose where to save the raw covid-19 data locally.
+Note that if you choose to do this, you must also change the "input_file_path" config under "data_preparation-get_local_data".
+
+This is all in terms of environmental variables and configurations for a full local run. You can jump onto the section
+"Run the Data Acquisition and Modeling Pipeline" for next steps if you are choosing to run completely locally.
+
+#### 1b. Set-up for Running Program Completely Locally Aside from Data Acquisition in s3
+In this scenario, the execution pipeline along with the app will run completely on your local machine other than the covid-19
+input data, which will be pulled from the API and saved to s3. It will then be accessed from s3 for subsequent steps.
+
+##### Environment Variables: 
+You will __need__ to set environment variables for accessing s3. If you already are aware of the process to set these
+please do so in the manner of your choosing. Otherwise, in the root directory of the repo, there is a file called __aws_creds__. 
+Please open this file and enter the information within the file that is associated with your s3 account. Do not use 
+quotation marks or include any spaces in the file. Save this file and close it. How to use this file will be discussed 
+in a later section of this readMe. 
+
+In addition, for secondary functionality of the webapp, you will need to get a newsAPI key. Please refer to the environment
+variable section in part 1a of this readMe for instructions on how to get a key and its relative importance in this pipeline.
+
+##### Configuration Options:
+In this case, there is one particular configuration that must be changed for a successful run of the pipeline. Other configs
+such as local file pathing can be altered as explained in Configuration Options section in part 1a. 
+
+The configuration that __must__ modified is the name of the s3 bucket. Navigate to the config folder and open config.yml. 
+In this file change the value of the instances associated with the key '__s3_bucket_name__' in lines 3 and 9 of the file to 
+correspond to your s3 bucket name. You may change the bucket directory paths (lines 4 and 10) if you wish to as well. 
+If you do not, the default paths will be generated in your bucket.
+
+Please see the __config.py__ section in part 1a if you wish to configure the name of the local database data is written to.
+Otherwise a defaulted value will be used.
+
+#### 1c. DEFAULT: Set-up for Running Program With Data Acq in s3, Database in RDS, All Else Local
+This is the default method set in this repo. It is fairly similar to 1b aside from changing from a local SQLite database 
+to using an RDS instance.
+
+##### Environment Variables: 
+As discussed in part 1b of the the readMe, you will __need__ to set environment variables for accessing s3. Instructions
+on how to do so is localed in part 1b in the Environment Variables section. Other configs such as local file pathing can 
+again be altered as explained in Configuration Options section in part 1a.  
+
+In addition to this, you will also __need__ to 
+set your RDS configurations as environment variables. To do so, please open the file __rds_config__ in the repo root directory.
+file. The variables in this file should be adjusted according to your RDS instance--do not use quotation marks or spaces within the file
+A brief explanation of these variables are below:
+* MYSQL_USER: the master username associated with your RDS instance (try using admin if you do not recall altering this)
+* MYSQL_PASSWORD: the password associated with the aforementioned master username 
+* MYSQL_HOST: RDS endpoint associated with your instance
+* MYSQL_PORT: port associated with the RDS instance -- generally 3306
+* DATABASE_NAME: Name of the database to work with
+
+Finally, for secondary functionality of the webapp, you will need to get a newsAPI key. Please refer to the environment
+variable section in part 1a of this readMe for instructions on how to get a key and its relative importance in this pipeline.
+
+##### Configuration Options:
+Please go to the Configuration Options section in part 1b. The same discussion applies here aside from the final sentence
+pertaining to the local database configuration in the config.py
+
+In addition, you will need to change some of the filename/pathing as the code expects certain things for finding files 
+in s3 and organizing outputs. Namely there are some potential changes to be made under the generate_forecasts part of the config.yml
+* If you have not made any s3 pathing changes to the "train_models" part of the config.yml since cloning the repo then simply do the following:
+    * For configs: get_model->bucket_dir_path, et_country_list->bucket_dir_path, get_country_list-> input_filename, and 
+    get_country_forecast->bucket_dir_path, update the date you say in the path to today's date. 
+* If you've altered s3 pathing to the "train_models" part of the config.yml, then you need do a little more.
+   * The config, get_model->bucket_dir_path, must have a path that matches the path under train_models->global_model_configs->save_model_to_s3
+   ->s3_output_path. Copy this path and add "/yyyy-mm-dd" to it, filled in with today's date as the value for the bucket_dir_path config
+   * Repeat this with the config, get_country_list->bucket_dir_path. Verify the path matches that under train_models->country_model_configs->
+   save_model_to_s3->s3_output_path. Add a "/yyyy-mm-dd" to the path, filled in with today's date.
+   * Follow the same exact steps as in the second bullet, but fore the config, get_country_forecast->bucket_dir_path
+   * Also in the config, get_country_list-> input_filename, add a "_yyyy-mm-dd" to the path, filled in with today's date
+
+#### 1d. Set-up for Running Program Fully in S3 and RDS
+
+##### Environment Variables: 
+Please go to the Environment Variables section of part 1c. These directions apply equivalently here.
+##### Configuration Options:
+This scenario is almost identical to part 1c. The only difference is that you will need to update the config.yml file a little more.
+Namely, you __must__ change the value associated with all instances (lines 3,9,16,26,47,66,75,82,87,92) of the key __s3_bucket_name__ to correspond to your s3 bucket.
+Similarly you can change (you don't have to though) any bucket directory path reference (lines 4,10,17,27,48,67,76,83,88,93) in the config.yml file--be careful to verify consistency. E.g.
+if you change an output path, it might be the input path for a downstream function. For any other configuration choices you
+can refer to the applicable section in part 1c.
+
+
+### 2. Run the Data Acquisition and Modeling Pipeline
+This section will discuss the building of the Docker image and the subsequent Docker run command to execute the pipeline for 
+modeling and retrieving all things needed for the webapp.
+
+#### Build the Docker Image
+For all of various choices of running the pipeline (with or without s3, with or without RDS, etc) the Docker image command
+remains tme same. From the root directory of the project repo, please issue the command below to build the image. You __must__
+replace "<image_name>" with a name of your choice.
+```angular2
+docker build -f="DockerfileBash" -t <image_name> .
 ```
 
+#### Run-time Options
+Depending on which path you've chosen in part 1a-1d (full local, RDS or no RDS, etc) there will be a couple of modifications
+you may need to make. Particularly, since this code repo gives you the option of different levels of s3 usage, a command line arg
+is necessary where and when to use s3. Aside from this there a few command line args to be aware that apply to all choices 1a-1d.
 
-### 2. Configure Flask app 
+Storage approach dependent run-time options:
+* For option 1a (full local), please open the run_main_pipeline.sh in a text editor. Remove the --s3 from lines 4 and 10.
+* For options 1b and 1c, no changes are needed in the run_main_pipeline.sh. If you happened to have changed this and want
+to get back to the default, make sure there is a --s3 at the end of lines 4 and 10.
+* For option 1d (full s3), please open the run_main_pipeline.sh in a text editor. Add --s3 to lines 10,13,16,19,22, and 25
 
-`config/flaskconfig.py` holds the configurations for the Flask app. It includes the following configurations:
+General run-time options:
+The __data_acquisition.py__ script has a few command line args to be aware of. NOTE, the start_date and end_date API params 
+discussed below have been slated to be incorporated in the API but as of 6/1/2020, they are not yet functional.
+* --start_date: This is the date which will be used as the date from which the data pull will begin from. The rationale is 
+to prevent the app from having to go get 100 MB+ data each day and instead just getting the new data for previous day. If you use s3
+the code will automatically find the date of the last pull and use that as the start_date. It is key to note that this arg is set to
+'01-01-2020' in the default 'run_main_pipeline.sh' because the first time you use this script, you will not have a data file in your s3,
+which will not allow the code to find what it should use as the start date. For local, if no arg is specified, it defaults to '01-01-2020'.
+* --end_date: This is the date for which the date will be pulled until. This is default to the current date for obvious reasons.
+The primary reason this arg is available (but not limited to) is in-case there is a correction in the data, then you can run the pipeline with 
+the correction window specified using start_date and end_date args.
 
-```python
-DEBUG = True  # Keep True for debugging, change to False when moving to production 
-LOGGING_CONFIG = "config/logging/local.conf"  # Path to file that configures Python logger
-HOST = "0.0.0.0" # the host that is running the app. 0.0.0.0 when running locally 
-PORT = 5000  # What port to expose app on. Must be the same as the port exposed in app/Dockerfile 
-SQLALCHEMY_DATABASE_URI = 'sqlite:///data/tracks.db'  # URI (engine string) for database that contains tracks
-APP_NAME = "penny-lane"
-SQLALCHEMY_TRACK_MODIFICATIONS = True 
-SQLALCHEMY_ECHO = False  # If true, SQL for queries made will be printed
-MAX_ROWS_SHOW = 100 # Limits the number of rows returned from the database 
+#### Running the Pipeline
+To run the pipeline, a docker run command is issued. This command does look slightly different depending on the choice of run approach.
+E.g. which option 1a-1d. Regardless of the command used below, verify that you are in the project root directory before issuing it.
+
+__NOTE__: The first  time you run the pipeline, the data acquisition step will pull 100+ MBs of data. Also as this is a relatively 
+newer API, there is no specified data update times listed in the documentation/website. It does say the data is updated several
+times a day. For most accurate near term forecasts, I would wait until later in the evening to run the pipeline. 
+
+* For 1a (full local) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static  --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+* For 1b (s3 data acq, all other local) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data -mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+* For 1c (1b and use RDS) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/models/global,target=/src/models/global --mount type=bind,source="$(pwd)"/models/country,target=/src/models/country --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=rds_config --env-file=news_api_env <image_name> run_main_pipeline.sh
+```
+* For 1d (Full s3 and use RDS) issue the command below. You __must__ replace "<image_name>" with the docker image name you set previously.
+```angular2
+docker run --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=aws_creds --env-file=rds_config --env-file=news_api_env <image_name> run_main_pipeline.sh
 ```
 
-### 3. Run the Flask app 
+#### Verifying a Successful Run:
+This section details how to verify a successful run if you chose to run paths 1b or 1c. E.g. if you used s3 only for data acquisition.
+Look for the following artifacts in your local directory (if you left the default local pathing in the config.yml)
+* Directory: data/
+    * If you ran with a local database, you should find that object here
+* Directory: models/global
+    * ARIMA_global_model: Trained model object
+    * config.yml: The yml configuration used for this modeling run config.yml 
+* Directory: models/country
+    * ARIMA_{}: Models for many countries 
+    * config.yml: The yml configuration used for this modeling run 
+    * countries.pkl: Pickle file containing list of all countries for which a model was built 
+* Directory: app/static:
+    * global_cases: html file used by the webapp for ploting COVID-19 cases trends over time
+    * global_animation: html file used by the webapp to show time-lapse of COVID-19 spread across the global
+    * global_cases_forecast: html file for plot showing recent global case numbers and the near future forecasted numbers
 
-To run the Flask app, run: 
+### 3. Run the Web Application
+Now that the modeling pipeline is complete and the necessary artifacts are acquired, the webapp can be run.
 
-```bash
-python app.py
+A configuration change must be made if you choose to create a local database with a database name different than the default.
+If this is the case, navigate to the config folder and open up flaskconfig.py in an editor of your choice. Change line 20 to match
+the name you gave the local database. An optional change is to adjust the APP_NAME field in line 5 of the flaskconfig.py.
+
+Issue the following command from the project repo root directory to the build the Docker image for the web application. Replace
+"<image_name>" with a name of your choosing.
+```angular2
+docker build -f="DockerfileApp" -t <image_name> .
+```
+To boot the app, run the command below if you are working with a local database. You _need_ to replace "<image_name" with
+the image name you chose in the command above. You can set your own SQLALCHEMY_DATABASE_URI and the flaskconfig.py
+file will locate it based on an os.get. If you choose to do this, note that you need to re-run the model exeuction pipeline
+and before you do change the SQLALCHEMY_DATABASE_URI in the config.py file to match.
+
+```angular2
+docker run -p 5000:5000 <image_name>
+```
+If you are working with an RDS database then issue:
+```angular2
+docker run --env-file=rds_config -p 5000:5000 msia423-covid19-app
 ```
 
-You should now be able to access the app at http://0.0.0.0:5000/ in your browser.
+To access the application:
+* MAC/Linux users go to: http://0.0.0.0:5000/
+* Windows users go to: http://localhost:5000/
 
-## Running the app in Docker 
-
-### 1. Build the image 
-
-The Dockerfile for running the flask app is in the `app/` folder. To build the image, run from this directory (the root of the repo): 
-
-```bash
- docker build -f app/Dockerfile -t pennylane .
+### 4. Code Unit Testing
+If you would like to run the unit testing script, first verify that you have built a docker image with bash as an entrypoint.
+The command to run for this is located at the beginning of section 2. Once you have done this, simply the run command below. Note
+you must change "<image_name>" to correspond with whatever you have named the docker image.
 ```
-
-This command builds the Docker image, with the tag `pennylane`, based on the instructions in `app/Dockerfile` and the files existing in this directory.
- 
-### 2. Run the container 
-
-To run the app, run from this directory: 
-
-```bash
-docker run -p 5000:5000 --name test pennylane
+docker run <image_name> unit_tests.sh
 ```
-You should now be able to access the app at http://0.0.0.0:5000/ in your browser.
-
-This command runs the `pennylane` image as a container named `test` and forwards the port 5000 from container to your laptop so that you can access the flask app exposed through that port. 
-
-If `PORT` in `config/flaskconfig.py` is changed, this port should be changed accordingly (as should the `EXPOSE 5000` line in `app/Dockerfile`)
-
-### 3. Kill the container 
-
-Once finished with the app, you will need to kill the container. To do so: 
-
-```bash
-docker kill test 
-```
-
-where `test` is the name given in the `docker run` command.
-
-### Workaround for potential Docker problem for Windows.
-
-It is possible that Docker will have a problem with the bash script `app/boot.sh` that is used when running on a Windows machine. Windows can encode the script wrongly so that when it copies over to the Docker image, it is corrupted. If this happens to you, try using the alternate Dockerfile, `app/Dockerfile_windows`, i.e.:
-
-```bash
- docker build -f app/Dockerfile_windows -t pennylane .
-```
-
-then run the same `docker run` command: 
-
-```bash
-docker run -p 5000:5000 --name test pennylane
-```
-
-The new image defines the entry command as `python3 app.py` instead of `./boot.sh`. Building the sample PennyLane image this way will require initializing the database prior to building the image so that it is copied over, rather than created when the container is run. Therefore, please **do the step [Create the database with a single song](#create-the-database-with-a-single-song) above before building the image**.
+Note, there are two csv files located in the data/sample directory in the git repo. These need to be present for some of the
+unit tests. If you happen to have .gitignore settings that were told to ignore .csvs or if you removed the .csvs, then
+you may encounter an error being thrown when running the unit tests.
