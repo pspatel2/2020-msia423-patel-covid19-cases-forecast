@@ -267,7 +267,8 @@ SQLALCHEMY_DATABASE_URI on your machine. The code below originally was run with 
 containing the connection details. This should work, but if for some reason it does not you can always edit line 18 in the flaskconfig.py.
 Something to note the app reads data from a database to generate plots with the country forecasts in them. If you don't point 
 the below SQLALCHEMY_DATABASE_URI to my RDS, the app won't be able to produce the plots. You can either chose to point to my 
-RDS or run the instructions below (in the bold section THESE ARE THE STEPS..) to have data generated and stored to the
+RDS, enter no SQLALCHEMY_DATABASE_URI (which will then default to using my local db in the data directory, or 
+run the instructions below (in the bold section THESE ARE THE STEPS..) to have data generated and stored to the 
 SQLALCHEMY_DATABASE_URI of your choice.
 ```angular2
 docker run -e SQLALCHEMY_DATABASE_URI -p 5000:5000 <image_name>
