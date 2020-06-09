@@ -262,11 +262,15 @@ To run the app, first build the docker image using the command below, replacing 
 ```angular2
 docker build -f="DockerfileApp" -t <image_name> .
 ```
-Next issue the command, replacing "<image_name>". If you choose not use the rds_config file approach to set the environment variables,
-you can provide an SQL_URI directly by sourcing an env var called SQLALCHEMY_DATABASE_URI on your machine and replacing 
-the --env-file command below with -e SQLALCHEMY_DATABASE_URI.
+Next issue the command, replacing "<image_name>". Before running please verify you have sourced an env var called 
+SQLALCHEMY_DATABASE_URI on your machine. The code below originally was run with --env-file=rds_config with the rds_config
+containing the connection details. This should work, but if for some reason it does not you can always edit line 18 in the flaskconfig.py.
+Something to note the app reads data from a database to generate plots with the country forecasts in them. If you don't point 
+the below SQLALCHEMY_DATABASE_URI to my RDS, the app won't be able to produce the plots. You can either chose to point to my 
+RDS or run the instructions below (in the bold section THESE ARE THE STEPS..) to have data generated and stored to the
+SQLALCHEMY_DATABASE_URI of your choice.
 ```angular2
-docker run --env-file=rds_config -p 5000:5000 <image_name>
+docker run -e SQLALCHEMY_DATABASE_URI -p 5000:5000 <image_name>
 ```
 To view the app in browser and/or for more details on configurations, view section 3 of this report that contains more details.
 
@@ -286,7 +290,7 @@ and enter your key where indicated. Do not add a space after the "=".
 Then run the model execution (forecasting) and file generation (for webapp) pipeline using the command below, again replacing "<image_name>".
 If you have a newsAPI key and added it to the environment file, add the argument --env-file=news_api_env to command as well.
 ```angular2
-docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static --env-file=rds_config <image_name> run_forecast_appfiles_pipeline.sh
+docker run --mount type=bind,source="$(pwd)"/data,target=/src/data --mount type=bind,source="$(pwd)"/app/static,target=/src/app/static -e SQLALCHEMY_DATABASE_URI <image_name> run_forecast_appfiles_pipeline.sh
 ```
 To run the app, first build the docker image using the command below, replacing "<image_name>":
 ```angular2
@@ -294,7 +298,7 @@ docker build -f="DockerfileApp" -t <image_name> .
 ```
 Next issue the command, replacing "<image_name>":
 ```angular2
-docker run --env-file=rds_config -p 5000:5000 <image_name>
+docker run -e SQLALCHEMY_DATABASE_URI -p 5000:5000 <image_name>
 ```
 To view the app in browser and/or for more details on configurations, view section 3 of this report that contains more details.
 
